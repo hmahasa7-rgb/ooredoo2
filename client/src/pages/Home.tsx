@@ -102,7 +102,10 @@ export default function Home() {
                 </div>
               </div>
 
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2">
+              <Button 
+                onClick={() => setLocation("/payment")}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2"
+              >
                 متابعة الدفع
               </Button>
             </CardContent>
